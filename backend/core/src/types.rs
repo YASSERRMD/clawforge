@@ -12,7 +12,26 @@ pub struct AgentSpec {
     pub trigger: TriggerSpec,
     pub capabilities: Capabilities,
     pub llm_policy: LlmPolicy,
+    pub role: Role,
+    pub memory_config: Option<MemoryConfig>,
     pub workflow: Vec<WorkflowStep>,
+}
+
+/// The role an agent plays in the system.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum Role {
+    Planner,
+    #[default]
+    Executor,
+    Supervisor,
+}
+
+/// Configuration for agent memory.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemoryConfig {
+    pub collection_name: String,
+    pub embedding_model: String,
 }
 
 impl AgentSpec {
@@ -24,6 +43,8 @@ impl AgentSpec {
             trigger,
             capabilities: Capabilities::default(),
             llm_policy: LlmPolicy::default(),
+            role: Role::default(),
+            memory_config: None,
             workflow: Vec::new(),
         }
     }
@@ -138,6 +159,8 @@ mod tests {
         let agent = AgentSpec::new("test-agent", TriggerSpec::Manual);
         assert_eq!(agent.name, "test-agent");
         assert!(!agent.id.is_nil());
+        assert_eq!(agent.role, Role::Executor);
+        assert!(agent.memory_config.is_none());
     }
 
     #[test]

@@ -16,6 +16,10 @@ pub enum Message {
     ExecuteAction(ActionProposal),
     /// Any → Supervisor: log an audit event
     AuditEvent(AuditEventPayload),
+    /// Planner → Memory: query memory
+    MemoryQuery(MemoryQueryRequest),
+    /// Memory → Planner: return search results
+    MemoryResponse(MemoryQueryResponse),
 }
 
 /// A trigger event from the scheduler.
@@ -72,6 +76,30 @@ pub struct AuditEventPayload {
     pub event: Event,
 }
 
+/// Request to query the vector memory.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemoryQueryRequest {
+    pub run_id: Uuid,
+    pub agent_id: Uuid,
+    pub query_vector: Vec<f32>,
+    pub min_score: f32,
+    pub limit: usize,
+}
+
+/// Response from a memory query.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemoryQueryResponse {
+    pub run_id: Uuid,
+    pub results: Vec<MemorySearchResult>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemorySearchResult {
+    pub content: String,
+    pub score: f32,
+    pub metadata: serde_json::Value,
+}
+
 impl Message {
     pub fn run_id(&self) -> Uuid {
         match self {
@@ -79,6 +107,8 @@ impl Message {
             Message::PlanRequest(p) => p.run_id,
             Message::ExecuteAction(a) => a.run_id,
             Message::AuditEvent(e) => e.event.run_id,
+            Message::MemoryQuery(q) => q.run_id,
+            Message::MemoryResponse(r) => r.run_id,
         }
     }
 }
