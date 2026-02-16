@@ -5,7 +5,7 @@ members = [
     "backend/planner",
     "backend/executor",
     "backend/supervisor",
-    "backend/cli",
+    "backend/cli", "backend/memory",
 ]
 resolver = "2"
 
