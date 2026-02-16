@@ -1,19 +1,26 @@
 use std::sync::Arc;
-
+use tokio::sync::{broadcast, mpsc};
 use axum::{
-    extract::State,
+    extract::{State, ws::{WebSocketUpgrade, WebSocket, Message}},
     http::StatusCode,
-    response::Json,
+    response::{Json, IntoResponse},
     routing::get,
     Router,
 };
 use serde_json::{json, Value};
+use tokio_stream::wrappers::BroadcastStream;
+use futures::{sink::SinkExt, stream::StreamExt};
 
+// Removed duplicate import
+use clawforge_core::{Event, AgentSpec, Message as CoreMessage};
+use clawforge_core::message::JobTrigger;
 use clawforge_supervisor::Supervisor;
 
 /// Shared application state for API handlers.
 pub struct AppState {
     pub supervisor: Arc<Supervisor>,
+    pub broadcast_tx: broadcast::Sender<Event>,
+    pub scheduler_tx: mpsc::Sender<CoreMessage>,
 }
 
 /// Build the Axum router with all API routes.
@@ -21,9 +28,43 @@ pub fn build_router(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/api/health", get(health))
         .route("/api/runs", get(get_runs))
-        .route("/api/agents", get(get_agents))
+        .route("/api/runs/{id}", get(get_run_details))
+        .route("/api/agents", get(list_agents).post(create_agent))
+        .route("/api/agents/{id}/run", get(run_agent).post(run_agent)) // Allow GET for easy testing, POST for correctness
         .route("/api/status", get(get_status))
+        .route("/api/ws", get(ws_handler))
         .with_state(state)
+}
+
+/// WebSocket handler for real-time events.
+async fn ws_handler(
+    ws: WebSocketUpgrade,
+    State(state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    ws.on_upgrade(|socket| handle_socket(socket, state))
+}
+
+async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
+    let mut rx = state.broadcast_tx.subscribe();
+    
+    // Create a stream from the broadcast receiver
+    let mut stream = BroadcastStream::new(rx);
+
+    while let Some(msg) = stream.next().await {
+        match msg {
+            Ok(event) => {
+                if let Ok(json) = serde_json::to_string(&event) {
+                    if socket.send(Message::Text(json.into())).await.is_err() {
+                        break;
+                    }
+                }
+            }
+            Err(_) => {
+                // Lagged or closed
+                break;
+            }
+        }
+    }
 }
 
 /// Health check endpoint.
@@ -46,12 +87,82 @@ async fn get_runs(State(state): State<Arc<AppState>>) -> Result<Json<Value>, Sta
     }
 }
 
-/// Get registered agents (placeholder for Phase 2 agent registry).
-async fn get_agents() -> Json<Value> {
-    Json(json!({
-        "agents": [],
-        "note": "Agent registry coming in Phase 2"
-    }))
+/// Get details for a specific run.
+async fn get_run_details(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Path(run_id): axum::extract::Path<uuid::Uuid>,
+) -> Result<Json<Value>, StatusCode> {
+    match state.supervisor.get_run_summary(&run_id) {
+        Ok(summary) => Ok(Json(summary)),
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to fetch run details");
+            Err(StatusCode::NOT_FOUND)
+        }
+    }
+}
+
+/// List all registered agents.
+async fn list_agents(State(state): State<Arc<AppState>>) -> Result<Json<Value>, StatusCode> {
+    match state.supervisor.list_agents() {
+        Ok(agents) => Ok(Json(json!({ "agents": agents }))),
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to list agents");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+/// Create a new agent.
+async fn create_agent(
+    State(state): State<Arc<AppState>>,
+    Json(mut agent): Json<AgentSpec>,
+) -> Result<Json<Value>, StatusCode> {
+    // Ensure ID is generated if empty (though AgentSpec::new does it, JSON might override)
+    if agent.id.is_nil() {
+        agent.id = uuid::Uuid::new_v4();
+    }
+    
+    match state.supervisor.save_agent(&agent) {
+        Ok(_) => Ok(Json(json!({ "status": "created", "id": agent.id }))),
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to create agent");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+/// Trigger a run for an agent.
+async fn run_agent(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Path(agent_id): axum::extract::Path<uuid::Uuid>,
+) -> Result<Json<Value>, StatusCode> {
+    // 1. Fetch agent spec
+    let agent = state.supervisor.get_agent(&agent_id)
+        .map_err(|e| {
+            tracing::error!(error = %e, "Failed to get agent");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    // 2. Create ScheduleJob
+    let run_id = uuid::Uuid::new_v4();
+    let msg = CoreMessage::ScheduleJob(JobTrigger {
+        run_id,
+        agent_id: agent.id,
+        trigger_reason: "Manually triggered via API".to_string(),
+    });
+
+    // 3. Send to scheduler
+    state.scheduler_tx.send(msg).await.map_err(|e| {
+        tracing::error!(error = %e, "Failed to send job to scheduler");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    Ok(Json(json!({
+        "status": "triggered",
+        "run_id": run_id,
+        "agent_id": agent_id
+    })))
 }
 
 /// Get runtime status.
