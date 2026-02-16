@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use chrono::Utc;
 use cron::Schedule;
@@ -11,7 +11,7 @@ use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
 use clawforge_core::{
-    AgentSpec, Component, JobTrigger, Message, PlanRequest, TriggerSpec,
+    AgentSpec, Component, Message, PlanRequest, TriggerSpec,
 };
 
 /// The Scheduler component evaluates agent triggers and dispatches PlanRequest messages.
@@ -199,7 +199,7 @@ impl Component for Scheduler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use clawforge_core::{Capabilities, LlmPolicy};
+    use clawforge_core::{Capabilities, JobTrigger, LlmPolicy};
 
     fn test_agent(trigger: TriggerSpec) -> AgentSpec {
         AgentSpec {

@@ -7,6 +7,7 @@ description = "Cron and webhook trigger scheduler for ClawForge"
 [dependencies]
 clawforge-core = { path = "../core" }
 tokio = { workspace = true }
+serde_json = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }

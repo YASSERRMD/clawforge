@@ -5,10 +5,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, warn};
-use uuid::Uuid;
 
 use clawforge_core::{
-    ActionProposal, AuditEventPayload, ClawError, Component, Event, EventKind, LlmProvider,
+    ActionProposal, AuditEventPayload, ClawError, Component, Event, EventKind,
     LlmRequest, Message, PlanRequest, ProposedAction,
 };
 
