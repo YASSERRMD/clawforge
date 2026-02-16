@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, broadcast, RwLock};
 use tracing::{debug, error, info, warn};
 
 use clawforge_core::{Component, Event, EventKind, Message};
@@ -10,12 +10,21 @@ use crate::store::EventStore;
 /// The Supervisor component logs all audit events, enforces budget policies,
 /// and tracks run state.
 pub struct Supervisor {
-    store: EventStore,
+    event_store: EventStore,
+    broadcast_tx: RwLock<Option<broadcast::Sender<Event>>>,
 }
 
 impl Supervisor {
-    pub fn new(store: EventStore) -> Self {
-        Self { store }
+    pub fn new(event_store: EventStore) -> Self {
+        Self {
+            event_store,
+            broadcast_tx: RwLock::new(None),
+        }
+    }
+
+    pub async fn set_broadcast_tx(&self, tx: broadcast::Sender<Event>) {
+        let mut guard = self.broadcast_tx.write().await;
+        *guard = Some(tx);
     }
 
     /// Check budget constraints after an event.
@@ -36,7 +45,7 @@ impl Supervisor {
 
     /// Get summarized run info from stored events.
     pub fn get_run_summary(&self, run_id: &uuid::Uuid) -> Result<serde_json::Value> {
-        let events = self.store.get_run_events(run_id)?;
+        let events = self.event_store.get_run_events(run_id)?;
         let status = events
             .last()
             .map(|e| e.kind.to_string())
@@ -56,7 +65,7 @@ impl Supervisor {
 
     /// Get recent runs summary for the API.
     pub fn get_recent_runs(&self, limit: usize) -> Result<Vec<serde_json::Value>> {
-        let events = self.store.get_recent(limit)?;
+        let events = self.event_store.get_recent(limit)?;
 
         // Group by run_id
         let mut runs: std::collections::HashMap<String, Vec<&Event>> =
@@ -107,8 +116,15 @@ impl Component for Supervisor {
                     );
 
                     // Persist the event
-                    if let Err(e) = self.store.insert(event) {
+                    if let Err(e) = self.event_store.insert(event) {
                         error!(error = %e, "Failed to persist event");
+                    } else {
+                        // Broadcast event to subscribers (e.g. WebSocket)
+                        let tx = self.broadcast_tx.read().await;
+                        if let Some(tx) = &*tx {
+                            // We don't care if there are no receivers
+                            let _ = tx.send(event.clone()); // Clone event for broadcast
+                        }
                     }
 
                     // Check budget constraints

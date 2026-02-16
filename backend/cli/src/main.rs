@@ -6,6 +6,8 @@ use std::sync::Arc;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use tokio::net::TcpListener;
+use tokio::sync::broadcast;
+use tower_http::cors::CorsLayer;
 use tracing::{error, info};
 
 use clawforge_core::ClawBus;
@@ -97,6 +99,10 @@ async fn run_server(config: Config) -> Result<()> {
     let event_store = EventStore::open(&config.db_path)?;
     let supervisor = Arc::new(Supervisor::new(event_store));
 
+    // Initialize broadcast channel for real-time events
+    let (broadcast_tx, _) = broadcast::channel(100);
+    supervisor.set_broadcast_tx(broadcast_tx.clone()).await;
+
     // Initialize channel bus
     let mut bus = ClawBus::new();
 
@@ -170,9 +176,10 @@ async fn run_server(config: Config) -> Result<()> {
     // Start HTTP API
     let app_state = Arc::new(AppState {
         supervisor: Arc::clone(&supervisor),
+        broadcast_tx,
     });
 
-    let app = api::build_router(app_state);
+    let app = api::build_router(app_state).layer(CorsLayer::permissive());
     let addr = format!("{}:{}", config.bind_address, config.port);
 
     info!(addr = %addr, "HTTP API listening");
