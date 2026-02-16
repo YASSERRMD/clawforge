@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use rusqlite::{params, Connection};
 use tracing::info;
 
-use clawforge_core::Event;
+use clawforge_core::{Event, AgentSpec};
 
 /// SQLite-backed event store for immutable event-sourcing.
 pub struct EventStore {
@@ -46,7 +46,14 @@ impl EventStore {
             );
             CREATE INDEX IF NOT EXISTS idx_events_run_id ON events(run_id);
             CREATE INDEX IF NOT EXISTS idx_events_agent_id ON events(agent_id);
-            CREATE INDEX IF NOT EXISTS idx_events_kind ON events(kind);",
+            CREATE INDEX IF NOT EXISTS idx_events_kind ON events(kind);
+            CREATE TABLE IF NOT EXISTS agents (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                spec TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );",
         )?;
         Ok(())
     }
@@ -147,6 +154,61 @@ impl EventStore {
             .collect();
 
         Ok(events)
+    }
+
+    /// Save an agent specification.
+    pub fn save_agent(&self, agent: &AgentSpec) -> Result<()> {
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        let spec_json = serde_json::to_string(agent)?;
+        let now = chrono::Utc::now().to_rfc3339();
+
+        conn.execute(
+            "INSERT INTO agents (id, name, spec, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?4)
+             ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                spec = excluded.spec,
+                updated_at = excluded.updated_at",
+            params![
+                agent.id.to_string(),
+                agent.name,
+                spec_json,
+                now,
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Get an agent by ID.
+    pub fn get_agent(&self, id: &uuid::Uuid) -> Result<Option<AgentSpec>> {
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        let mut stmt = conn.prepare("SELECT spec FROM agents WHERE id = ?1")?;
+        
+        let mut rows = stmt.query(params![id.to_string()])?;
+        if let Some(row) = rows.next()? {
+            let spec_json: String = row.get(0)?;
+            let agent = serde_json::from_str(&spec_json)?;
+            Ok(Some(agent))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// List all agents.
+    pub fn list_agents(&self) -> Result<Vec<AgentSpec>> {
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        let mut stmt = conn.prepare("SELECT spec FROM agents ORDER BY name ASC")?;
+        
+        let agents = stmt
+            .query_map([], |row| {
+                let spec_json: String = row.get(0)?;
+                Ok(spec_json)
+            })?
+            .filter_map(|r| r.ok())
+            .filter_map(|json| serde_json::from_str(&json).ok())
+            .collect();
+            
+        Ok(agents)
     }
 }
 

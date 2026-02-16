@@ -177,6 +177,7 @@ async fn run_server(config: Config) -> Result<()> {
     let app_state = Arc::new(AppState {
         supervisor: Arc::clone(&supervisor),
         broadcast_tx,
+        scheduler_tx: bus.scheduler_tx.clone(),
     });
 
     let app = api::build_router(app_state).layer(CorsLayer::permissive());

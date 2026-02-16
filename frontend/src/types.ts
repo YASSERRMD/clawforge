@@ -6,3 +6,10 @@ export interface Event {
     kind: string;
     payload: any;
 }
+
+export interface Agent {
+    id: string;
+    name: string;
+    description: string;
+    trigger: any;
+}

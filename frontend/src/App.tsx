@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Layout, Globe } from 'lucide-react';
 import { RunList } from './components/RunList';
+import { AgentList } from './components/AgentList';
 import { EventFeed } from './components/EventFeed';
 import { useEventStream } from './useEventStream';
 import type { Event } from './types';
@@ -66,6 +67,8 @@ function App() {
           </div>
 
           <RunList onSelectRun={handleSelectRun} />
+
+          <AgentList />
         </aside>
 
         <section className="flex-1">

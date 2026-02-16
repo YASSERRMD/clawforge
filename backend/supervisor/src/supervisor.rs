@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use tokio::sync::{mpsc, broadcast, RwLock};
 use tracing::{debug, error, info, warn};
 
-use clawforge_core::{Component, Event, EventKind, Message};
+use clawforge_core::{Component, Event, EventKind, Message, AgentSpec};
 
 use crate::store::EventStore;
 
@@ -92,6 +92,21 @@ impl Supervisor {
             .collect();
 
         Ok(summaries)
+    }
+
+    /// Save an agent spec.
+    pub fn save_agent(&self, agent: &AgentSpec) -> Result<()> {
+        self.event_store.save_agent(agent)
+    }
+
+    /// Get an agent by ID.
+    pub fn get_agent(&self, id: &uuid::Uuid) -> Result<Option<AgentSpec>> {
+        self.event_store.get_agent(id)
+    }
+
+    /// List all agents.
+    pub fn list_agents(&self) -> Result<Vec<AgentSpec>> {
+        self.event_store.list_agents()
     }
 }
 
