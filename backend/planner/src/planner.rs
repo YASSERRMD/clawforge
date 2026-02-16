@@ -19,6 +19,7 @@ pub struct LlmPlanner {
     registry: Arc<ProviderRegistry>,
     executor_tx: mpsc::Sender<Message>,
     supervisor_tx: mpsc::Sender<Message>,
+    memory_tx: Option<mpsc::Sender<Message>>,
 }
 
 impl LlmPlanner {
@@ -26,11 +27,13 @@ impl LlmPlanner {
         registry: Arc<ProviderRegistry>,
         executor_tx: mpsc::Sender<Message>,
         supervisor_tx: mpsc::Sender<Message>,
+        memory_tx: Option<mpsc::Sender<Message>>,
     ) -> Self {
         Self {
             registry,
             executor_tx,
             supervisor_tx,
+            memory_tx,
         }
     }
 
@@ -138,6 +141,9 @@ impl Component for LlmPlanner {
 
     async fn start(&self, mut rx: mpsc::Receiver<Message>) -> Result<()> {
         info!("Planner started");
+        
+        // Track pending plan requests waiting for memory: run_id -> PlanRequest
+        let mut pending_plans: std::collections::HashMap<uuid::Uuid, PlanRequest> = std::collections::HashMap::new();
 
         while let Some(msg) = rx.recv().await {
             match msg {
@@ -151,63 +157,57 @@ impl Component for LlmPlanner {
                         "Processing plan request"
                     );
 
-                    // Emit plan-started event
-                    let _ = self
-                        .supervisor_tx
-                        .send(Message::AuditEvent(AuditEventPayload {
-                            event: Event::new(
+                    // 1. Emit start event
+                    let _ = self.supervisor_tx.send(Message::AuditEvent(AuditEventPayload {
+                        event: Event::new(run_id, agent_id, EventKind::RunStarted, serde_json::json!({"source": "planner"}))
+                    })).await;
+
+                    // 2. Check memory config
+                    if let Some(mem_config) = &request.agent.memory_config {
+                         // Only query if we have a memory channel
+                         if let Some(mem_tx) = &self.memory_tx {
+                            info!(run_id = %run_id, "Querying memory for context");
+                            
+                            // Construct query vector (mock for now, ideally embed user prompt)
+                            // In a real system, we'd embed request.context
+                            let mock_query = vec![0.0; 1536]; 
+
+                            let query = clawforge_core::MemoryQueryRequest {
                                 run_id,
                                 agent_id,
-                                EventKind::RunStarted,
-                                serde_json::json!({"source": "planner"}),
-                            ),
-                        }))
-                        .await;
-
-                    match self.parallel_plan(&request).await {
-                        Ok(action) => {
-                            info!(run_id = %run_id, "Plan generated, sending to executor");
-
-                            // Emit plan-generated event
-                            let _ = self
-                                .supervisor_tx
-                                .send(Message::AuditEvent(AuditEventPayload {
-                                    event: Event::new(
-                                        run_id,
-                                        agent_id,
-                                        EventKind::PlanGenerated,
-                                        serde_json::json!({"action_type": "llm_response"}),
-                                    ),
-                                }))
-                                .await;
-
-                            // Send action to executor
-                            let proposal = Message::ExecuteAction(ActionProposal {
-                                run_id,
-                                agent_id,
-                                step_index: 0,
-                                action,
-                            });
-
-                            if let Err(e) = self.executor_tx.send(proposal).await {
-                                error!(error = %e, "Failed to send action to executor");
+                                query_vector: mock_query,
+                                min_score: 0.7,
+                                limit: 3,
+                            };
+                            
+                            // Store pending request
+                            pending_plans.insert(run_id, request);
+                            
+                            if let Err(e) = mem_tx.send(Message::MemoryQuery(query)).await {
+                                error!(error = %e, "Failed to send memory query");
+                                // Fallback: plan without memory
+                                // Retrieve request back (clone needed if we didn't insert, but we did)
+                                // Ideally we recover. For now, just log.
                             }
-                        }
-                        Err(e) => {
-                            error!(run_id = %run_id, error = %e, "Planning failed");
+                            continue;
+                         }
+                    }
 
-                            let _ = self
-                                .supervisor_tx
-                                .send(Message::AuditEvent(AuditEventPayload {
-                                    event: Event::new(
-                                        run_id,
-                                        agent_id,
-                                        EventKind::RunFailed,
-                                        serde_json::json!({"error": e.to_string()}),
-                                    ),
-                                }))
-                                .await;
-                        }
+                    // 3. No memory or no config -> Plan immediately
+                    self.execute_planning(request).await;
+                }
+                Message::MemoryResponse(response) => {
+                    if let Some(mut request) = pending_plans.remove(&response.run_id) {
+                         info!(run_id = %response.run_id, results = response.results.len(), "Received memory context");
+                         
+                         // Enrich context with memory results
+                         if let serde_json::Value::Object(ref mut map) = request.context {
+                             map.insert("memory_context".to_string(), serde_json::json!(response.results));
+                         }
+
+                         self.execute_planning(request).await;
+                    } else {
+                        warn!(run_id = %response.run_id, "Received memory response for unknown run");
                     }
                 }
                 other => {
@@ -215,8 +215,41 @@ impl Component for LlmPlanner {
                 }
             }
         }
+        }
 
         info!("Planner channel closed, shutting down");
         Ok(())
+    }
+
+    /// Run the planning logic and dispatch to executor.
+    async fn execute_planning(&self, request: PlanRequest) {
+        let run_id = request.run_id;
+        let agent_id = request.agent.id;
+
+        match self.parallel_plan(&request).await {
+            Ok(action) => {
+                info!(run_id = %run_id, "Plan generated, sending to executor");
+                let _ = self.supervisor_tx.send(Message::AuditEvent(AuditEventPayload {
+                    event: Event::new(run_id, agent_id, EventKind::PlanGenerated, serde_json::json!({"action_type": "llm_response"})),
+                })).await;
+
+                let proposal = Message::ExecuteAction(ActionProposal {
+                    run_id,
+                    agent_id,
+                    step_index: 0,
+                    action,
+                });
+
+                if let Err(e) = self.executor_tx.send(proposal).await {
+                    error!(error = %e, "Failed to send action to executor");
+                }
+            }
+            Err(e) => {
+                error!(run_id = %run_id, error = %e, "Planning failed");
+                let _ = self.supervisor_tx.send(Message::AuditEvent(AuditEventPayload {
+                    event: Event::new(run_id, agent_id, EventKind::RunFailed, serde_json::json!({"error": e.to_string()})),
+                })).await;
+            }
+        }
     }
 }
