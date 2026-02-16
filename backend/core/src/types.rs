@@ -15,6 +15,8 @@ pub struct AgentSpec {
     pub role: Role,
     pub memory_config: Option<MemoryConfig>,
     pub workflow: Vec<WorkflowStep>,
+    #[serde(default)]
+    pub allowed_tools: Vec<String>, // List of tool names
 }
 
 /// The role an agent plays in the system.
@@ -46,6 +48,7 @@ impl AgentSpec {
             role: Role::default(),
             memory_config: None,
             workflow: Vec::new(),
+            allowed_tools: Vec::new(),
         }
     }
 }

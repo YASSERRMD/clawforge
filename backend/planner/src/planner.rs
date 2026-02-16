@@ -21,6 +21,8 @@ pub struct LlmPlanner {
     executor_tx: mpsc::Sender<Message>,
     supervisor_tx: mpsc::Sender<Message>,
     memory_tx: Option<mpsc::Sender<Message>>,
+    // We will inject tool definitions into the prompt, but the Executor actually runs them.
+    // The planner needs to know ABOUT them.
 }
 
 impl LlmPlanner {
@@ -46,9 +48,20 @@ impl LlmPlanner {
             return Err(ClawError::AllProvidersFailed);
         }
 
+        // Inject tool context if agent has tools
+        let mut system_prompt = request.agent.llm_policy.system_prompt.clone();
+        if !request.agent.allowed_tools.is_empty() {
+             system_prompt.push_str("\n\nYou have access to the following tools:\n");
+             for tool in &request.agent.allowed_tools {
+                 system_prompt.push_str(&format!("- {}\n", tool));
+                 // In a real implementation, we would look up the tool definition and inject schema here
+             }
+             system_prompt.push_str("\nTo use a tool, reply in the format:\nAction: ToolName(arg1=\"value\", arg2=\"value\")\n");
+        }
+
         let llm_request = LlmRequest {
             model: request.agent.llm_policy.model.clone(),
-            system_prompt: request.agent.llm_policy.system_prompt.clone(),
+            system_prompt,
             user_prompt: serde_json::to_string_pretty(&request.context)
                 .unwrap_or_else(|_| request.context.to_string()),
             max_tokens: request.agent.llm_policy.max_tokens,
@@ -107,6 +120,51 @@ impl LlmPlanner {
                         total_latency_ms = elapsed.as_millis(),
                         "Plan generated"
                     );
+
+                    info!(
+                        provider = %response.provider,
+                        total_latency_ms = elapsed.as_millis(),
+                        "Plan generated"
+                    );
+
+                    // Simple parser for "Action: ToolName(json_args)"
+                    // Example: Action: file_write({"path": "foo.txt", "content": "bar"})
+                    if let Some(action_line) = response.content.lines().find(|l| l.starts_with("Action: ")) {
+                        let content = action_line.trim_start_matches("Action: ").trim();
+                        // simplistic parsing: Name(Args)
+                        if let Some(idx) = content.find('(') {
+                             if content.ends_with(')') {
+                                 let tool_name = &content[..idx];
+                                 let args_str = &content[idx+1..content.len()-1];
+                                 
+                                 // Try to parse args as JSON (assuming the LLM output valid JSON inside parens)
+                                 // Or lenient parsing could go here.
+                                 if let Ok(args) = serde_json::from_str::<serde_json::Value>(args_str) {
+                                     info!(tool = %tool_name, "Parsed tool call");
+                                     return Ok(ProposedAction::ToolCall {
+                                         name: tool_name.to_string(),
+                                         args,
+                                     });
+                                 } else {
+                                     warn!("Failed to parse tool args as JSON: {}", args_str);
+                                 }
+                             }
+                        }
+                    } else if let Some(code_block) = response.content.strip_prefix("```json") {
+                        // Support JSON output for tools too
+                        if let Ok(val) = serde_json::from_str::<serde_json::Value>(code_block.trim_end_matches("```").trim()) {
+                             if let Some(tool) = val.get("tool").and_then(|t| t.as_str()) {
+                                 if let Some(args) = val.get("args") {
+                                      return Ok(ProposedAction::ToolCall {
+                                         name: tool.to_string(),
+                                         args: args.clone(),
+                                     });
+                                 }
+                             }
+                        }
+                    }
+
+                    // Fallback to text response
                     return Ok(ProposedAction::LlmResponse {
                         content: response.content,
                         provider: response.provider,
@@ -164,7 +222,7 @@ impl Component for LlmPlanner {
                     })).await;
 
                     // 2. Check memory config
-                    if let Some(mem_config) = &request.agent.memory_config {
+                    if let Some(_mem_config) = &request.agent.memory_config {
                          // Only query if we have a memory channel
                          if let Some(mem_tx) = &self.memory_tx {
                             info!(run_id = %run_id, "Querying memory for context");

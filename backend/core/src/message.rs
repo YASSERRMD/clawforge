@@ -62,11 +62,17 @@ pub enum ProposedAction {
         headers: std::collections::HashMap<String, String>,
         body: Option<String>,
     },
+    /// "Thinking" response from LLM (no side effect)
     LlmResponse {
         content: String,
         provider: String,
         model: String,
         tokens_used: u64,
+    },
+    /// Request to execute a registered tool
+    ToolCall {
+        name: String,
+        args: serde_json::Value,
     },
 }
 

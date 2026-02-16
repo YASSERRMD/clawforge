@@ -16,6 +16,22 @@ pub trait Component: Send + Sync + 'static {
     async fn start(&self, rx: mpsc::Receiver<Message>) -> Result<()>;
 }
 
+/// A capability that an agent can invoke dynamically.
+#[async_trait]
+pub trait Tool: Send + Sync {
+    /// Unique name of the tool (e.g., "file_read").
+    fn name(&self) -> &str;
+    
+    /// Description for the LLM prompt.
+    fn description(&self) -> &str;
+    
+    /// JSON Schema for the tool's parameters.
+    fn parameters(&self) -> serde_json::Value;
+    
+    /// Execute the tool with the given arguments.
+    async fn execute(&self, args: serde_json::Value) -> Result<String, anyhow::Error>;
+}
+
 /// Trait for LLM providers used by the planner.
 #[async_trait]
 pub trait LlmProvider: Send + Sync {

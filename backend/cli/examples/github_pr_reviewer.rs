@@ -6,7 +6,10 @@ use anyhow::Result;
 use tracing::{info, Level};
 use uuid::Uuid;
 
-use clawforge_core::{types::Role, AgentSpec, Capabilities, ClawBus, Component, JobTrigger, LlmPolicy, Message, TriggerSpec};
+use clawforge_core::{
+    types::Role, ActionType, AgentSpec, Capabilities, ClawBus, Component, FailurePolicy, JobTrigger, LlmPolicy, Message,
+    TriggerSpec, WorkflowStep,
+};
 use clawforge_executor::Executor;
 use clawforge_planner::providers::ProviderRegistry;
 use clawforge_planner::LlmPlanner;
@@ -44,14 +47,24 @@ async fn main() -> Result<()> {
         },
         llm_policy: LlmPolicy {
             providers: vec!["openrouter".to_string(), "ollama".to_string()],
-            model: "openai/gpt-4o".to_string(),
-            max_tokens: 1000,
-            temperature: 0.0,
-            system_prompt: "You are a code reviewer.".to_string(),
+            model: "openai/gpt-4o-mini".to_string(),
+            max_tokens: 4096,
+            temperature: 0.7,
+            system_prompt: "You are a senior Rust engineer reviewing code.".to_string(),
         },
         role: Role::Executor,
         memory_config: None,
-        workflow: vec![], // Workflow steps would be defined here in Phase 2
+        workflow: vec![
+            WorkflowStep {
+                name: "fetch_pr".to_string(),
+                action: ActionType::ShellCommand {
+                    command: "git".to_string(),
+                    args: vec!["fetch".to_string(), "origin".to_string(), "pull/123/head:pr-123".to_string()],
+                },
+                on_failure: FailurePolicy::Stop,
+            },
+        ],
+        allowed_tools: vec![],
     };
 
     info!(agent_id = %pr_reviewer.id, "Defined PR Reviewer agent");
