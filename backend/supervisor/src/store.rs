@@ -1,3 +1,5 @@
+use std::sync::Mutex;
+
 use anyhow::{Context, Result};
 use rusqlite::{params, Connection};
 use tracing::info;
@@ -6,14 +8,16 @@ use clawforge_core::Event;
 
 /// SQLite-backed event store for immutable event-sourcing.
 pub struct EventStore {
-    conn: Connection,
+    conn: Mutex<Connection>,
 }
 
 impl EventStore {
     /// Open or create the event store at the given path.
     pub fn open(path: &str) -> Result<Self> {
         let conn = Connection::open(path).context("Failed to open SQLite database")?;
-        let store = Self { conn };
+        let store = Self {
+            conn: Mutex::new(conn),
+        };
         store.init_schema()?;
         info!(path = %path, "Event store opened");
         Ok(store)
@@ -22,13 +26,16 @@ impl EventStore {
     /// Create an in-memory store (for testing).
     pub fn in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory().context("Failed to open in-memory SQLite")?;
-        let store = Self { conn };
+        let store = Self {
+            conn: Mutex::new(conn),
+        };
         store.init_schema()?;
         Ok(store)
     }
 
     fn init_schema(&self) -> Result<()> {
-        self.conn.execute_batch(
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS events (
                 id TEXT PRIMARY KEY,
                 run_id TEXT NOT NULL,
@@ -46,8 +53,9 @@ impl EventStore {
 
     /// Insert an event into the store.
     pub fn insert(&self, event: &Event) -> Result<()> {
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
         let payload = serde_json::to_string(&event.payload)?;
-        self.conn.execute(
+        conn.execute(
             "INSERT INTO events (id, run_id, agent_id, timestamp, kind, payload)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
@@ -64,7 +72,8 @@ impl EventStore {
 
     /// Query events for a given run.
     pub fn get_run_events(&self, run_id: &uuid::Uuid) -> Result<Vec<Event>> {
-        let mut stmt = self.conn.prepare(
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        let mut stmt = conn.prepare(
             "SELECT id, run_id, agent_id, timestamp, kind, payload
              FROM events WHERE run_id = ?1 ORDER BY timestamp ASC",
         )?;
@@ -99,15 +108,15 @@ impl EventStore {
 
     /// Count all events in the store.
     pub fn count(&self) -> Result<usize> {
-        let count: usize = self
-            .conn
-            .query_row("SELECT COUNT(*) FROM events", [], |row| row.get(0))?;
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        let count: usize = conn.query_row("SELECT COUNT(*) FROM events", [], |row| row.get(0))?;
         Ok(count)
     }
 
     /// Get recent events across all runs.
     pub fn get_recent(&self, limit: usize) -> Result<Vec<Event>> {
-        let mut stmt = self.conn.prepare(
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        let mut stmt = conn.prepare(
             "SELECT id, run_id, agent_id, timestamp, kind, payload
              FROM events ORDER BY timestamp DESC LIMIT ?1",
         )?;
