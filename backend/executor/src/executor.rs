@@ -12,6 +12,7 @@ use uuid::Uuid;
 use clawforge_core::{
     AuditEventPayload, Capabilities, ClawError, Component, Event, EventKind,
     Message, ProposedAction,
+    tools::ToolRegistry,
 };
 
 /// The Executor component receives ActionProposals, validates capabilities,
@@ -65,6 +66,10 @@ impl Executor {
             }
             ProposedAction::LlmResponse { .. } => {
                 // LLM responses are always allowed (they're data, not side-effects)
+            }
+            ProposedAction::ToolCall { .. } => {
+                // For now, treat tools as always allowed if capabilities check passed upstream
+                // In future, check specific tool permissions here
             }
         }
         Ok(())
@@ -143,6 +148,25 @@ impl Executor {
         }))
     }
 
+    /// Execute a tool call.
+    async fn execute_tool(
+        registry: &ToolRegistry,
+        name: &str,
+        args: serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        let tool = registry.get(name).ok_or_else(|| {
+            anyhow::anyhow!("Tool '{}' not found", name)
+        })?;
+        
+        info!(tool = %name, "Executing tool");
+        let output = tool.execute(args).await?;
+        
+        Ok(serde_json::json!({
+            "tool": name,
+            "output": output
+        }))
+    }
+
     /// Send an audit event to the supervisor.
     async fn emit_event(&self, run_id: Uuid, agent_id: Uuid, kind: EventKind, payload: serde_json::Value) {
         let _ = self
@@ -162,6 +186,13 @@ impl Component for Executor {
 
     async fn start(&self, mut rx: mpsc::Receiver<Message>) -> Result<()> {
         info!("Executor started");
+        
+        // Initialize standard tools
+        let mut registry = ToolRegistry::new();
+        registry.register(std::sync::Arc::new(clawforge_tools::ShellTool));
+        registry.register(std::sync::Arc::new(clawforge_tools::FileReadTool));
+        registry.register(std::sync::Arc::new(clawforge_tools::FileWriteTool));
+        // Simple HTTP tool wrapper could be added here or we rely on built-in capability for now
 
         while let Some(msg) = rx.recv().await {
             match msg {
@@ -179,7 +210,7 @@ impl Component for Executor {
                     // In Phase 2 this will be looked up from the agent registry.
                     let capabilities = Capabilities {
                         can_read_files: true,
-                        can_write_files: false,
+                        can_write_files: true,
                         can_execute_commands: true,
                         can_make_http_requests: true,
                         allowed_domains: vec![],
@@ -243,7 +274,11 @@ impl Component for Executor {
                                 "model": model,
                                 "tokens_used": tokens_used,
                             }))
-                        }
+                        },
+                         ProposedAction::ToolCall {
+                            name,
+                            args,
+                        } => Self::execute_tool(&registry, name, args.clone()).await,
                     };
 
                     match result {

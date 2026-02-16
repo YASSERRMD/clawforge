@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -7,7 +7,7 @@ use tracing::{info, Level};
 use uuid::Uuid;
 
 use clawforge_core::{
-    AgentSpec, Capabilities, ClawBus, Component, EventKind, JobTrigger, LlmPolicy, Message, TriggerSpec,
+    AgentSpec, Capabilities, ClawBus, Component, JobTrigger, LlmPolicy, Message, TriggerSpec,
     message::{MemoryQueryResponse, MemorySearchResult},
     types::{MemoryConfig, Role},
 };
@@ -153,6 +153,7 @@ async fn main() -> Result<()> {
             embedding_model: "mock".to_string(),
         }),
         workflow: vec![],
+        allowed_tools: vec![],
     };
 
     // 3. Wiring
@@ -163,7 +164,7 @@ async fn main() -> Result<()> {
     let event_store = EventStore::in_memory()?;
     let supervisor = Arc::new(Supervisor::new(event_store));
     
-    let mut registry = Arc::new(ProviderRegistry::new());
+    let mut _registry = Arc::new(ProviderRegistry::new());
     // Use unsafe get_mut or just recreate since we haven't shared it yet
     let mut registry = ProviderRegistry::new();
     registry.register("mock", Arc::new(clawforge_planner::providers::mock::MockProvider::new("mock")));

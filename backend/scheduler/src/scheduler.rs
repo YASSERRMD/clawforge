@@ -18,19 +18,19 @@ use clawforge_core::{
 pub struct Scheduler {
     agents: Vec<AgentSpec>,
     planner_tx: mpsc::Sender<Message>,
-    supervisor_tx: mpsc::Sender<Message>,
+    _supervisor_tx: mpsc::Sender<Message>,
 }
 
 impl Scheduler {
     pub fn new(
         agents: Vec<AgentSpec>,
         planner_tx: mpsc::Sender<Message>,
-        supervisor_tx: mpsc::Sender<Message>,
+        _supervisor_tx: mpsc::Sender<Message>,
     ) -> Self {
         Self {
             agents,
             planner_tx,
-            supervisor_tx,
+            _supervisor_tx,
         }
     }
 }
@@ -212,6 +212,7 @@ mod tests {
             role: Default::default(),
             memory_config: None,
             workflow: vec![],
+            allowed_tools: vec![],
         }
     }
 
