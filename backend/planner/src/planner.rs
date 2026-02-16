@@ -9,6 +9,7 @@ use tracing::{debug, error, info, warn};
 use clawforge_core::{
     ActionProposal, AuditEventPayload, ClawError, Component, Event, EventKind,
     LlmRequest, Message, PlanRequest, ProposedAction,
+    message::MemoryQueryRequest, // Add this
 };
 
 use crate::providers::ProviderRegistry;
@@ -172,7 +173,7 @@ impl Component for LlmPlanner {
                             // In a real system, we'd embed request.context
                             let mock_query = vec![0.0; 1536]; 
 
-                            let query = clawforge_core::MemoryQueryRequest {
+                            let query = MemoryQueryRequest {
                                 run_id,
                                 agent_id,
                                 query_vector: mock_query,
@@ -215,12 +216,13 @@ impl Component for LlmPlanner {
                 }
             }
         }
-        }
 
         info!("Planner channel closed, shutting down");
         Ok(())
     }
+}
 
+impl LlmPlanner {
     /// Run the planning logic and dispatch to executor.
     async fn execute_planning(&self, request: PlanRequest) {
         let run_id = request.run_id;

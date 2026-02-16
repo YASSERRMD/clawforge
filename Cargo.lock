@@ -262,11 +262,13 @@ name = "clawforge-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum",
  "chrono",
  "clap",
  "clawforge-core",
  "clawforge-executor",
+ "clawforge-memory",
  "clawforge-planner",
  "clawforge-scheduler",
  "clawforge-supervisor",
@@ -309,6 +311,18 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
+ "uuid",
+]
+
+[[package]]
+name = "clawforge-memory"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "serde",
+ "serde_json",
+ "tokio",
  "uuid",
 ]
 
