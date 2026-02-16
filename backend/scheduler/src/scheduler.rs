@@ -209,6 +209,8 @@ mod tests {
             trigger,
             capabilities: Capabilities::default(),
             llm_policy: LlmPolicy::default(),
+            role: Default::default(),
+            memory_config: None,
             workflow: vec![],
         }
     }

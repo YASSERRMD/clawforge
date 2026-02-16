@@ -6,9 +6,7 @@ use anyhow::Result;
 use tracing::{info, Level};
 use uuid::Uuid;
 
-use clawforge_core::{
-    AgentSpec, Capabilities, ClawBus, Component, JobTrigger, LlmPolicy, Message, TriggerSpec,
-};
+use clawforge_core::{types::Role, AgentSpec, Capabilities, ClawBus, Component, JobTrigger, LlmPolicy, Message, TriggerSpec};
 use clawforge_executor::Executor;
 use clawforge_planner::providers::ProviderRegistry;
 use clawforge_planner::LlmPlanner;
@@ -51,6 +49,8 @@ async fn main() -> Result<()> {
             temperature: 0.0,
             system_prompt: "You are a code reviewer.".to_string(),
         },
+        role: Role::Executor,
+        memory_config: None,
         workflow: vec![], // Workflow steps would be defined here in Phase 2
     };
 

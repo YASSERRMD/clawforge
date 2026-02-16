@@ -1,5 +1,6 @@
 pub mod openrouter;
 pub mod ollama;
+pub mod mock;
 
 use std::collections::HashMap;
 use std::sync::Arc;
