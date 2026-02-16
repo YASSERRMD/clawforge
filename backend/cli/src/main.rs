@@ -119,9 +119,10 @@ async fn run_server(config: Config) -> Result<()> {
 
     // Wire up components
     let planner = LlmPlanner::new(
-        Arc::clone(&registry),
+        registry,
         bus.executor_tx.clone(),
         bus.supervisor_tx.clone(),
+        None, // Memory disabled in main CLI for now
     );
 
     let executor = Executor::new(bus.supervisor_tx.clone());

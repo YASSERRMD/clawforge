@@ -73,6 +73,7 @@ async fn main() -> Result<()> {
         registry,
         bus.executor_tx.clone(),
         bus.supervisor_tx.clone(),
+        None,
     );
 
     let executor = Executor::new(bus.supervisor_tx.clone());
