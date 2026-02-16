@@ -1,0 +1,16 @@
+[package]
+name = "clawforge-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core types, traits, and channel bus for ClawForge agent runtime"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+async-trait = { workspace = true }

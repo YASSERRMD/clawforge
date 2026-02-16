@@ -1,0 +1,27 @@
+[package]
+name = "clawforge-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI binary and HTTP API for ClawForge agent runtime"
+
+[[bin]]
+name = "clawforge"
+path = "src/main.rs"
+
+[dependencies]
+clawforge-core = { path = "../core" }
+clawforge-scheduler = { path = "../scheduler" }
+clawforge-planner = { path = "../planner" }
+clawforge-executor = { path = "../executor" }
+clawforge-supervisor = { path = "../supervisor" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+clap = { version = "4", features = ["derive"] }
+axum = "0.8"
+tower-http = { version = "0.6", features = ["cors", "trace"] }

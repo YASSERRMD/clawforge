@@ -1,0 +1,15 @@
+[package]
+name = "clawforge-scheduler"
+version = "0.1.0"
+edition = "2021"
+description = "Cron and webhook trigger scheduler for ClawForge"
+
+[dependencies]
+clawforge-core = { path = "../core" }
+tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+async-trait = { workspace = true }
+cron = "0.15"

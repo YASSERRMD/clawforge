@@ -1,0 +1,17 @@
+[package]
+name = "clawforge-supervisor"
+version = "0.1.0"
+edition = "2021"
+description = "Event logging, budget checks, and run state supervisor for ClawForge"
+
+[dependencies]
+clawforge-core = { path = "../core" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+async-trait = { workspace = true }
+rusqlite = { version = "0.32", features = ["bundled"] }
