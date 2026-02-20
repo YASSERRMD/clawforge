@@ -2,19 +2,36 @@ use async_trait::async_trait;
 use clawforge_core::Message;
 use tokio::sync::mpsc;
 
+// --------------- Original adapters ---------------
 pub mod telegram;
 pub mod discord;
 pub mod whatsapp;
+
+// --------------- Phase 14 web-hook adapters ---------------
 pub mod bluebubbles;
 pub mod slack;
 pub mod matrix;
 
+// --------------- Phase 25 long-tail adapters ---------------
+pub mod googlechat;
+pub mod irc;
+pub mod line;
+pub mod mattermost;
+pub mod msteams;
+pub mod signal;
+
+/// All channel adapters implement this trait.
 #[async_trait]
 pub trait ChannelAdapter: Send + Sync {
-    /// Starts the channel adapter, listening for incoming messages from the platform
-    /// and routing them via the `supervisor_tx` to the backend.
+    /// Human-readable adapter name for logging.
+    fn name(&self) -> &str;
+
+    /// Build an optional Axum sub-router for inbound webhook endpoints.
+    /// Adapters that use polling/long-connections return an empty router.
+    fn build_router(&self) -> axum::Router {
+        axum::Router::new()
+    }
+
+    /// Start the adapter's background work (polling loop, WS connection, etc.).
     async fn start(&self, supervisor_tx: mpsc::Sender<Message>) -> anyhow::Result<()>;
-    
-    /// Sends a text message back to the given conversation/chat ID on this platform.
-    async fn send_message(&self, chat_id: &str, text: &str) -> anyhow::Result<()>;
 }

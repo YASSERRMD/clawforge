@@ -92,6 +92,8 @@ impl WhatsAppAdapter {
 
 #[async_trait]
 impl ChannelAdapter for WhatsAppAdapter {
+    fn name(&self) -> &str { "whatsapp" }
+
     async fn start(&self, supervisor_tx: mpsc::Sender<Message>) -> anyhow::Result<()> {
         info!("Starting WhatsApp webhook adapter on port {}", self.port);
         
@@ -101,30 +103,31 @@ impl ChannelAdapter for WhatsAppAdapter {
         };
 
         let app = Router::new()
-            .route("/webhook/whatsapp", get(verify_webhook).post(handle_webhook))
+            .route("/webhook/whatsapp", axum::routing::get(verify_webhook).post(handle_webhook))
             .with_state(state);
 
-        let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
-        let listener = TcpListener::bind(&addr).await?;
+        let addr = std::net::SocketAddr::from(([0, 0, 0, 0], self.port));
+        let listener = tokio::net::TcpListener::bind(&addr).await?;
         
         info!("WhatsApp webhook listening on {}", addr);
         
-        // We spawn this so it doesn't block the caller (CLI main)
         tokio::spawn(async move {
             if let Err(e) = axum::serve(listener, app).await {
-                error!("WhatsApp server error: {}", e);
+                tracing::error!("WhatsApp server error: {}", e);
             }
         });
 
         Ok(())
     }
+}
 
-    async fn send_message(&self, _chat_id: &str, _text: &str) -> anyhow::Result<()> {
+impl WhatsAppAdapter {
+    pub async fn send_message(&self, _chat_id: &str, _text: &str) -> anyhow::Result<()> {
         info!("WhatsApp send_message via Graph API not fully implemented in adapter yet.");
-        // We would need the Graph API token and logic to post to graph.facebook.com here
         Ok(())
     }
 }
+
 
 async fn verify_webhook(
     State(state): State<AppState>,

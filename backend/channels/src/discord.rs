@@ -58,6 +58,8 @@ impl DiscordAdapter {
 
 #[async_trait]
 impl ChannelAdapter for DiscordAdapter {
+    fn name(&self) -> &str { "discord" }
+
     async fn start(&self, supervisor_tx: mpsc::Sender<Message>) -> anyhow::Result<()> {
         info!("Starting Discord adapter");
         
@@ -76,10 +78,10 @@ impl ChannelAdapter for DiscordAdapter {
 
         Ok(())
     }
+}
 
-    async fn send_message(&self, _chat_id: &str, _text: &str) -> anyhow::Result<()> {
-        // To send standalone messages we'd need the Context/Http client stored 
-        // outside the handler block. For this snippet we'll just log.
+impl DiscordAdapter {
+    pub async fn send_message(&self, _chat_id: &str, _text: &str) -> anyhow::Result<()> {
         info!("Discord send_message not fully implemented in adapter yet.");
         Ok(())
     }
