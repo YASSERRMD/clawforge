@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "backend/core",
     "backend/tools",
     "backend/planner",
     "backend/executor",
@@ -9,6 +10,7 @@ members = [
     "backend/memory",
     "backend/channels",
     "backend/media",
+    "backend/acp",
 ]
 resolver = "2"
 
