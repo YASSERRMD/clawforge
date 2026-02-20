@@ -7,3 +7,4 @@ Cargo.lock
 .vscode/
 clawforge.db
 sleepy_agent.json
+tmp/
