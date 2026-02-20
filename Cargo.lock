@@ -528,6 +528,8 @@ dependencies = [
  "chrono",
  "clawforge-core",
  "cron",
+ "rusqlite",
+ "serde",
  "serde_json",
  "tokio",
  "tracing",
