@@ -430,6 +430,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "clawforge-companion"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "clawforge-core"
 version = "0.1.0"
 dependencies = [
