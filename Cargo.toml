@@ -8,6 +8,7 @@ members = [
     "backend/cli",
     "backend/memory",
     "backend/channels",
+    "backend/media",
 ]
 resolver = "2"
 
