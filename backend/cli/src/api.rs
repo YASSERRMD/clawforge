@@ -21,6 +21,7 @@ pub struct AppState {
     pub supervisor: Arc<Supervisor>,
     pub broadcast_tx: broadcast::Sender<Event>,
     pub scheduler_tx: mpsc::Sender<CoreMessage>,
+    pub supervisor_tx: mpsc::Sender<CoreMessage>,
 }
 
 /// Build the Axum router with all API routes.
@@ -31,6 +32,8 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/api/runs/{id}", get(get_run_details))
         .route("/api/agents", get(list_agents).post(create_agent))
         .route("/api/agents/{id}/run", get(run_agent).post(run_agent)) // Allow GET for easy testing, POST for correctness
+        .route("/api/runs/{id}/cancel", get(cancel_run).post(cancel_run))
+        .route("/api/runs/{id}/input", get(provide_input).post(provide_input))
         .route("/api/status", get(get_status))
         .route("/api/ws", get(ws_handler))
         .with_state(state)
@@ -163,6 +166,38 @@ async fn run_agent(
         "run_id": run_id,
         "agent_id": agent_id
     })))
+}
+
+/// Cancel a specific run.
+async fn cancel_run(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Path(run_id): axum::extract::Path<uuid::Uuid>,
+) -> Result<Json<Value>, StatusCode> {
+    let msg = CoreMessage::CancelRun(run_id);
+    
+    state.supervisor_tx.send(msg).await.map_err(|e| {
+         tracing::error!(error = %e, "Failed to send cancel request");
+         StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    Ok(Json(json!({ "status": "cancellation_requested", "run_id": run_id })))
+}
+
+/// Provide input for a run.
+async fn provide_input(
+     State(state): State<Arc<AppState>>,
+    axum::extract::Path(run_id): axum::extract::Path<uuid::Uuid>,
+    Json(payload): Json<Value>,
+) -> Result<Json<Value>, StatusCode> {
+    let input = payload.get("input").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let msg = CoreMessage::ProvideInput { run_id, input };
+
+    state.supervisor_tx.send(msg).await.map_err(|e| {
+         tracing::error!(error = %e, "Failed to send input");
+         StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    Ok(Json(json!({ "status": "input_provided", "run_id": run_id })))
 }
 
 /// Get runtime status.

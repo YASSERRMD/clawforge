@@ -201,11 +201,15 @@ impl Component for Executor {
                     let agent_id = proposal.agent_id;
 
                     info!(
-                        run_id = %run_id,
+                        run_id = %proposal.run_id,
                         step = proposal.step_index,
-                        "Processing action proposal"
+                        "Executing action"
                     );
 
+                    // TODO: Check RunState from Supervisor before executing?
+                    // For now, we proceed. In a real implementation, we would 
+                    // check if run_state == Cancelled.
+                    
                     // For capability checking we need the agent spec — for now use permissive defaults.
                     // In Phase 2 this will be looked up from the agent registry.
                     let capabilities = Capabilities {

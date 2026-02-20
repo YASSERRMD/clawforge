@@ -20,6 +20,18 @@ pub enum Message {
     MemoryQuery(MemoryQueryRequest),
     /// Memory → Planner: return search results
     MemoryResponse(MemoryQueryResponse),
+    /// API → Supervisor: Cancel a run
+    CancelRun(Uuid),
+    /// API → Supervisor: Provide input to a paused run
+    ProvideInput {
+        run_id: Uuid,
+        input: String,
+    },
+    /// Executor/Planner → Supervisor: Request input from user
+    RequestInput {
+        run_id: Uuid,
+        prompt: String,
+    },
 }
 
 /// A trigger event from the scheduler.
@@ -114,7 +126,11 @@ impl Message {
             Message::ExecuteAction(a) => a.run_id,
             Message::AuditEvent(e) => e.event.run_id,
             Message::MemoryQuery(q) => q.run_id,
+// Removed duplicate match arm
             Message::MemoryResponse(r) => r.run_id,
+            Message::CancelRun(id) => *id,
+            Message::ProvideInput { run_id, .. } => *run_id,
+            Message::RequestInput { run_id, .. } => *run_id,
         }
     }
 }

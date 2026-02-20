@@ -3,7 +3,9 @@ use async_trait::async_trait;
 use tokio::sync::{mpsc, broadcast, RwLock};
 use tracing::{debug, error, info, warn};
 
-use clawforge_core::{Component, Event, EventKind, Message, AgentSpec};
+use uuid::Uuid;
+use clawforge_core::types::{AgentSpec, RunState};
+use clawforge_core::{Component, Event, EventKind, Message};
 
 use crate::store::EventStore;
 
@@ -12,6 +14,7 @@ use crate::store::EventStore;
 pub struct Supervisor {
     event_store: EventStore,
     broadcast_tx: RwLock<Option<broadcast::Sender<Event>>>,
+    run_states: RwLock<std::collections::HashMap<Uuid, RunState>>,
 }
 
 impl Supervisor {
@@ -19,6 +22,7 @@ impl Supervisor {
         Self {
             event_store,
             broadcast_tx: RwLock::new(None),
+            run_states: RwLock::new(std::collections::HashMap::new()),
         }
     }
 
@@ -124,6 +128,25 @@ impl Component for Supervisor {
                 Message::AuditEvent(payload) => {
                     let event = &payload.event;
 
+                    // Update local state tracking
+                    let mut states = self.run_states.write().await;
+                    match &event.kind {
+                        EventKind::RunStarted => {
+                            states.insert(event.run_id, RunState::Active);
+                            info!(run_id = %event.run_id, agent_id = %event.agent_id, "Run started");
+                        }
+                        EventKind::RunCompleted => {
+                            states.insert(event.run_id, RunState::Completed);
+                            info!(run_id = %event.run_id, "Run completed");
+                        }
+                        EventKind::RunFailed => {
+                            states.insert(event.run_id, RunState::Failed);
+                            warn!(run_id = %event.run_id, "Run failed");
+                        }
+                        _ => {}
+                    }
+                    drop(states); // Release lock
+
                     debug!(
                         run_id = %event.run_id,
                         kind = %event.kind,
@@ -138,7 +161,7 @@ impl Component for Supervisor {
                         let tx = self.broadcast_tx.read().await;
                         if let Some(tx) = &*tx {
                             // We don't care if there are no receivers
-                            let _ = tx.send(event.clone()); // Clone event for broadcast
+                            let _ = tx.send(event.clone()); 
                         }
                     }
 
@@ -150,31 +173,29 @@ impl Component for Supervisor {
                             "Budget constraint triggered"
                         );
                     }
-
-                    // Log key lifecycle events
-                    match &event.kind {
-                        EventKind::RunStarted => {
-                            info!(run_id = %event.run_id, agent_id = %event.agent_id, "Run started");
-                        }
-                        EventKind::RunCompleted => {
-                            info!(run_id = %event.run_id, "Run completed");
-                        }
-                        EventKind::RunFailed => {
-                            warn!(
-                                run_id = %event.run_id,
-                                payload = %event.payload,
-                                "Run failed"
-                            );
-                        }
-                        EventKind::ActionDenied => {
-                            warn!(
-                                run_id = %event.run_id,
-                                payload = %event.payload,
-                                "Action denied by capability check"
-                            );
-                        }
-                        _ => {}
+                }
+                Message::CancelRun(run_id) => {
+                    info!(%run_id, "Received cancellation request");
+                    let mut states = self.run_states.write().await;
+                    if let Some(state) = states.get_mut(&run_id) {
+                        *state = RunState::Cancelled;
+                        // In a real system, we'd need to signal the Executor to abort
+                        // For now, setting state is the first step
                     }
+                }
+                Message::RequestInput { run_id, prompt } => {
+                    info!(%run_id, %prompt, "Agent requested input");
+                    let mut states = self.run_states.write().await;
+                    states.insert(run_id, RunState::AwaitingInput(prompt));
+                }
+                Message::ProvideInput { run_id, input } => {
+                     info!(%run_id, "Input provided");
+                     let mut states = self.run_states.write().await;
+                     // Resuming would involve sending a message back to the Planner/Executor
+                     // For now, we just update the state back to Active
+                     if states.contains_key(&run_id) {
+                         states.insert(run_id, RunState::Active);
+                     }
                 }
                 other => {
                     debug!(msg_type = ?other, "Supervisor ignoring non-audit message");

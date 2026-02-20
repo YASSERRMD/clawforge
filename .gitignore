@@ -5,3 +5,6 @@ Cargo.lock
 .env
 .idea/
 .vscode/
+clawforge.db
+sleepy_agent.json
+tmp/
