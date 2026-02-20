@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Event } from '../types';
+import type { Event } from '../types';
 import { EventFeed } from './EventFeed';
-import { XCircle, Play, Pause, MessageSquare } from 'lucide-react';
+import { XCircle, MessageSquare } from 'lucide-react';
 import { Canvas } from './Canvas';
 
 interface RunDetailProps {

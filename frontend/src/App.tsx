@@ -2,36 +2,19 @@ import { useState } from 'react';
 import { Layout, Globe } from 'lucide-react';
 import { RunList } from './components/RunList';
 import { AgentList } from './components/AgentList';
+import { RunDetail } from './components/RunDetail';
 import { EventFeed } from './components/EventFeed';
 import { useEventStream } from './useEventStream';
-import type { Event } from './types';
+
 
 function App() {
   const { events: liveEvents, isConnected } = useEventStream();
   const [viewMode, setViewMode] = useState<'live' | 'history'>('live');
-  const [historyEvents, setHistoryEvents] = useState<Event[]>([]);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
 
   const handleSelectRun = async (runId: string) => {
     setActiveRunId(runId);
     setViewMode('history');
-    try {
-      const res = await fetch(`http://localhost:3000/api/runs/${runId}`); // Wait, API might not have this yet?
-      // Checking api.rs: only has /api/runs (list).
-      // I need to update backend/clis/src/api.rs to get run details/events!
-      // Or I can use /api/runs and filter? No, /api/runs returns summaries.
-      // Supervisor has get_run_summary(run_id) method! 
-      // I need to expose it in API.
-
-      // Let's assume I fix the API. For now, I can't fetch details.
-      // I will implement the fetch assuming the endpoint exists, then fix the backend.
-      if (res.ok) {
-        const data = await res.json();
-        setHistoryEvents(data.events || []);
-      }
-    } catch (e) {
-      console.error(e);
-    }
   };
 
   return (
@@ -71,11 +54,15 @@ function App() {
           <AgentList />
         </aside>
 
-        <section className="flex-1">
-          <EventFeed
-            events={viewMode === 'live' ? liveEvents : historyEvents}
-            title={viewMode === 'live' ? 'Live Activity' : `Run Details: ${activeRunId}`}
-          />
+        <section className="flex-1 h-[calc(100vh-6rem)]">
+          {viewMode === 'live' ? (
+            <EventFeed
+              events={liveEvents}
+              title="Live Activity"
+            />
+          ) : (
+            activeRunId && <RunDetail runId={activeRunId} />
+          )}
         </section>
       </main>
     </div>

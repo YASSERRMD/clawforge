@@ -7,9 +7,19 @@ export interface Event {
     payload: any;
 }
 
+export type RunState = 'active' | 'paused' | 'awaiting_input' | 'cancelled' | 'completed' | 'failed';
+
+export interface RunSummary {
+    run_id: string;
+    event_count: number;
+    status: string;
+}
+
 export interface Agent {
     id: string;
     name: string;
     description: string;
     trigger: any;
 }
+
+// Removed duplicate definitions

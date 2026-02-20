@@ -5,7 +5,7 @@ interface CanvasProps {
     agentId: string;
 }
 
-export const Canvas: React.FC<CanvasProps> = ({ runId, agentId }) => {
+export const Canvas: React.FC<CanvasProps> = ({ runId: _runId, agentId: _agentId }) => {
     return (
         <div className="border border-gray-300 rounded-md p-4 bg-white min-h-[400px]">
             <h3 className="text-lg font-semibold mb-2">Agent Canvas Surface</h3>
