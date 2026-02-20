@@ -1,3 +1,4 @@
+pub mod heartbeat;
 pub mod scheduler;
 
 // Phase 28: Cron enhancements
