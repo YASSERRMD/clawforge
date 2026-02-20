@@ -1,3 +1,4 @@
+pub mod bash_exec;
 pub mod browser;
 pub mod compaction;
 pub mod file;
@@ -5,7 +6,9 @@ pub mod image;
 pub mod loop_detection;
 pub mod model_catalog;
 pub mod node;
+pub mod process_registry;
 pub mod shell;
+pub mod skill_install;
 pub mod web;
 
 pub use browser::BrowserTool;
@@ -15,4 +18,7 @@ pub use loop_detection::{hash_input, LoopDetector, ToolCall};
 pub use model_catalog::{ModelCatalog, ModelEntry};
 pub use shell::ShellTool;
 pub use web::{web_fetch, web_search, WebFetchInput, WebFetchOutput, WebSearchInput, WebSearchOutput, SearchHit};
+pub use bash_exec::{exec_command, ExecConfig, ExecHost, ExecResult};
 pub use image::{generate_image, ImageGenInput, ImageGenOutput, ImageProvider};
+pub use process_registry::{ProcessEntry, ProcessRegistry};
+pub use skill_install::{SkillInstaller, SkillInstallResult, SkillSource};
