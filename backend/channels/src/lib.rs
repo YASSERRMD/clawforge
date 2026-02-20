@@ -5,6 +5,7 @@ use tokio::sync::mpsc;
 pub mod telegram;
 pub mod discord;
 pub mod whatsapp;
+pub mod bluebubbles;
 
 #[async_trait]
 pub trait ChannelAdapter: Send + Sync {

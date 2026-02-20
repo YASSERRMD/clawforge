@@ -173,6 +173,30 @@ async fn run_server(config: Config) -> Result<()> {
 
     info!("All components started");
 
+    // Initialize endpoints
+    let mut bb_router = None;
+    if let (Some(url), Some(password)) = (&config.bluebubbles_server_url, &config.bluebubbles_password) {
+        use clawforge_channels::bluebubbles::{BlueBubblesAdapter, BlueBubblesConfig};
+        use clawforge_channels::ChannelAdapter;
+        
+        let bb_config = BlueBubblesConfig {
+            server_url: url.clone(),
+            password: password.clone(),
+            webhook_path: config.bluebubbles_webhook_path.clone(),
+        };
+        
+        let bb_adapter = BlueBubblesAdapter::new(bb_config, bus.supervisor_tx.clone());
+        bb_router = Some(bb_adapter.build_router());
+        
+        let supervisor_tx_bb = bus.supervisor_tx.clone();
+        tokio::spawn(async move {
+            if let Err(e) = bb_adapter.start(supervisor_tx_bb).await {
+                error!("BlueBubbles adapter start failed: {}", e);
+            }
+        });
+        info!("Registered BlueBubbles channel adapter");
+    }
+
     // Start HTTP API
     let app_state = Arc::new(AppState {
         supervisor: Arc::clone(&supervisor),
@@ -181,7 +205,7 @@ async fn run_server(config: Config) -> Result<()> {
         supervisor_tx: bus.supervisor_tx.clone(),
     });
 
-    let app = api::build_router(app_state).layer(CorsLayer::permissive());
+    let app = api::build_router(app_state, bb_router).layer(CorsLayer::permissive());
     let addr = format!("{}:{}", config.bind_address, config.port);
 
     info!(addr = %addr, "HTTP API listening");

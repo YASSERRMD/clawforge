@@ -25,8 +25,8 @@ pub struct AppState {
 }
 
 /// Build the Axum router with all API routes.
-pub fn build_router(state: Arc<AppState>) -> Router {
-    Router::new()
+pub fn build_router(state: Arc<AppState>, bluebubbles_router: Option<Router>) -> Router {
+    let mut app = Router::new()
         .route("/api/health", get(health))
         .route("/api/runs", get(get_runs))
         .route("/api/runs/{id}", get(get_run_details))
@@ -36,7 +36,13 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/api/runs/{id}/input", get(provide_input).post(provide_input))
         .route("/api/status", get(get_status))
         .route("/api/ws", get(ws_handler))
-        .with_state(state)
+        .with_state(state);
+        
+    if let Some(bb_router) = bluebubbles_router {
+        app = app.merge(bb_router);
+    }
+    
+    app
 }
 
 /// WebSocket handler for real-time events.

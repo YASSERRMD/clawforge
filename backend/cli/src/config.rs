@@ -15,6 +15,11 @@ pub struct Config {
     pub ollama_url: Option<String>,
     /// Log level
     pub log_level: String,
+    
+    // BlueBubbles
+    pub bluebubbles_server_url: Option<String>,
+    pub bluebubbles_password: Option<String>,
+    pub bluebubbles_webhook_path: String,
 }
 
 impl Default for Config {
@@ -26,6 +31,9 @@ impl Default for Config {
             openrouter_api_key: None,
             ollama_url: Some("http://localhost:11434".to_string()),
             log_level: "info".to_string(),
+            bluebubbles_server_url: None,
+            bluebubbles_password: None,
+            bluebubbles_webhook_path: "/webhooks/bluebubbles".to_string(),
         }
     }
 }
@@ -46,6 +54,10 @@ impl Config {
             ollama_url: std::env::var("OLLAMA_URL").ok().or(Some("http://localhost:11434".to_string())),
             log_level: std::env::var("RUST_LOG")
                 .unwrap_or_else(|_| "info".to_string()),
+            bluebubbles_server_url: std::env::var("BLUEBUBBLES_SERVER_URL").ok(),
+            bluebubbles_password: std::env::var("BLUEBUBBLES_PASSWORD").ok(),
+            bluebubbles_webhook_path: std::env::var("BLUEBUBBLES_WEBHOOK_PATH")
+                .unwrap_or_else(|_| "/webhooks/bluebubbles".to_string()),
         }
     }
 }
