@@ -10,3 +10,11 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tokio = { workspace = true, features = ["full"] }
 uuid = { workspace = true, features = ["v4", "serde"] }
+tracing.workspace = true
+chrono.workspace = true
+
+# Durable SQLite storage
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# Embedding providers (HTTP clients)
+reqwest = { version = "0.12", features = ["json"] }
