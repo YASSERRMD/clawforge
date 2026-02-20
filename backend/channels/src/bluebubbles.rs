@@ -166,13 +166,16 @@ async fn handle_webhook(
 
 #[async_trait::async_trait]
 impl ChannelAdapter for BlueBubblesAdapter {
+    fn name(&self) -> &str { "bluebubbles" }
+
     async fn start(&self, supervisor_tx: mpsc::Sender<Message>) -> Result<()> {
-        info!("[BlueBubbles] Adapter started natively via webhook. outbound listener not strictly using this `start` method right now.");
-        // We actually want to listen on the webhook for inbound. Outbound isn't implemented as a dedicated background loop in channels unless doing websocket polling.
+        info!("[BlueBubbles] Adapter started natively via webhook.");
         Ok(())
     }
+}
 
-    async fn send_message(&self, chat_id: &str, text: &str) -> anyhow::Result<()> {
+impl BlueBubblesAdapter {
+    pub async fn send_message_to(&self, chat_id: &str, text: &str) -> anyhow::Result<()> {
         let chat_guid = self.resolve_chat_guid(chat_id).await?;
         let url = format!(
             "{}/api/v1/message/text?password={}",

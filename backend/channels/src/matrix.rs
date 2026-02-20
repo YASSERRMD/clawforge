@@ -242,14 +242,16 @@ impl MatrixAdapter {
 
 #[async_trait]
 impl ChannelAdapter for MatrixAdapter {
+    fn name(&self) -> &str { "matrix" }
+
     async fn start(&self, supervisor_tx: mpsc::Sender<Message>) -> Result<()> {
         info!("[Matrix] Starting sync loop");
-        // This runs indefinitely; caller should spawn this in a tokio task
         self.sync_loop(supervisor_tx).await
     }
+}
 
-    async fn send_message(&self, room_id: &str, text: &str) -> anyhow::Result<()> {
-        // Use a unique txn_id so the server can deduplicate retries
+impl MatrixAdapter {
+    pub async fn send_message(&self, room_id: &str, text: &str) -> anyhow::Result<()> {
         let txn_id = Uuid::new_v4().to_string();
         let url = self.send_url(room_id, &txn_id);
         let body = SendMessageBody {
@@ -257,12 +259,7 @@ impl ChannelAdapter for MatrixAdapter {
             body: text,
         };
 
-        let res = self
-            .http_client
-            .put(&url)
-            .json(&body)
-            .send()
-            .await?;
+        let res = self.http_client.put(&url).json(&body).send().await?;
 
         if !res.status().is_success() {
             let err = res.text().await.unwrap_or_default();

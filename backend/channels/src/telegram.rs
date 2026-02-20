@@ -20,6 +20,8 @@ impl TelegramAdapter {
 
 #[async_trait]
 impl ChannelAdapter for TelegramAdapter {
+    fn name(&self) -> &str { "telegram" }
+
     async fn start(&self, supervisor_tx: mpsc::Sender<Message>) -> anyhow::Result<()> {
         info!("Starting Telegram adapter");
         
@@ -67,7 +69,10 @@ impl ChannelAdapter for TelegramAdapter {
         Ok(())
     }
 
-    async fn send_message(&self, chat_id: &str, text: &str) -> anyhow::Result<()> {
+}
+
+impl TelegramAdapter {
+    pub async fn send_message(&self, chat_id: &str, text: &str) -> anyhow::Result<()> {
         let chat_id: i64 = chat_id.parse()?;
         self.bot.send_message(ChatId(chat_id), text).await?;
         Ok(())

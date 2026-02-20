@@ -232,13 +232,16 @@ fn verify_slack_signature(headers: &HeaderMap, body: &[u8], signing_secret: &str
 
 #[async_trait]
 impl ChannelAdapter for SlackAdapter {
+    fn name(&self) -> &str { "slack" }
+
     async fn start(&self, _supervisor_tx: mpsc::Sender<Message>) -> Result<()> {
-        // Inbound is handled by the axum webhook mounted via build_router().
         info!("[Slack] Adapter ready (webhook-based)");
         Ok(())
     }
+}
 
-    async fn send_message(&self, channel: &str, text: &str) -> anyhow::Result<()> {
+impl SlackAdapter {
+    pub async fn send_message(&self, channel: &str, text: &str) -> anyhow::Result<()> {
         let url = "https://slack.com/api/chat.postMessage";
         let body = SlackPostMessage {
             channel,
