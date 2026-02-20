@@ -13,6 +13,7 @@ members = [
     "backend/acp",
     "backend/security",
     "backend/tts",
+    "backend/companion",
 ]
 resolver = "2"
 
