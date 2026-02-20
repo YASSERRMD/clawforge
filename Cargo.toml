@@ -15,6 +15,7 @@ members = [
     "backend/tts",
     "backend/companion",
     "backend/hooks",
+    "backend/plugins",
 ]
 resolver = "2"
 
