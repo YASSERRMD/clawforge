@@ -22,6 +22,10 @@ impl Tool for ShellTool {
                 "command": {
                     "type": "string",
                     "description": "The command line to execute"
+                },
+                "use_docker": {
+                    "type": "boolean",
+                    "description": "If true, run command inside a sandboxed ubuntu docker container"
                 }
             },
             "required": ["command"]
@@ -30,11 +34,23 @@ impl Tool for ShellTool {
 
     async fn execute(&self, args: Value) -> anyhow::Result<String> {
         let command = args["command"].as_str().ok_or_else(|| anyhow::anyhow!("Missing 'command' argument"))?;
+        let use_docker = args["use_docker"].as_bool().unwrap_or(false);
 
-        let output = Command::new("sh")
-            .arg("-c")
-            .arg(command)
-            .output()?;
+        let output = if use_docker {
+            Command::new("docker")
+                .arg("run")
+                .arg("--rm")
+                .arg("ubuntu:latest")
+                .arg("sh")
+                .arg("-c")
+                .arg(command)
+                .output()?
+        } else {
+            Command::new("sh")
+                .arg("-c")
+                .arg(command)
+                .output()?
+        };
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);

@@ -178,6 +178,7 @@ async fn run_server(config: Config) -> Result<()> {
         supervisor: Arc::clone(&supervisor),
         broadcast_tx,
         scheduler_tx: bus.scheduler_tx.clone(),
+        supervisor_tx: bus.supervisor_tx.clone(),
     });
 
     let app = api::build_router(app_state).layer(CorsLayer::permissive());
@@ -186,6 +187,21 @@ async fn run_server(config: Config) -> Result<()> {
     info!(addr = %addr, "HTTP API listening");
 
     let listener = TcpListener::bind(&addr).await?;
+
+    // Phase 12: Optional Tailscale funnel/serve automation
+    // We spawn this so it runs after the server is up
+    if std::env::var("CLAWFORGE_ENABLE_TAILSCALE").is_ok() {
+        let port = config.port;
+        tokio::spawn(async move {
+            info!("Configuring Tailscale serve for port {}", port);
+            let _ = std::process::Command::new("tailscale")
+                .arg("serve")
+                .arg(format!("--bg"))
+                .arg(format!("localhost:{}", port))
+                .output();
+        });
+    }
+
     axum::serve(listener, app).await?;
 
     Ok(())

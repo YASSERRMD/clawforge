@@ -1,0 +1,21 @@
+[package]
+name = "channels"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clawforge-core = { path = "../core" }
+
+tokio = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+
+# Channel specific
+teloxide = "0.13" # Telegram
+serenity = "0.12" # Discord
+axum = { workspace = true } # For webhooks (WhatsApp)
+

@@ -1,11 +1,14 @@
 [workspace]
 members = [
-    "backend/core",
-    "backend/scheduler",
+    "backend/tools",
     "backend/planner",
     "backend/executor",
+    "backend/scheduler",
     "backend/supervisor",
-    "backend/cli", "backend/memory",
+    "backend/cli",
+    "backend/memory",
+    "backend/channels",
+    "backend/media",
 ]
 resolver = "2"
 
@@ -20,3 +23,5 @@ thiserror = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 async-trait = "0.1"
+axum = "0.7"
+tokio-stream = "0.1"
