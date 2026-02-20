@@ -1,6 +1,7 @@
 pub mod browser;
 pub mod compaction;
 pub mod file;
+pub mod image;
 pub mod loop_detection;
 pub mod model_catalog;
 pub mod node;
@@ -14,3 +15,4 @@ pub use loop_detection::{hash_input, LoopDetector, ToolCall};
 pub use model_catalog::{ModelCatalog, ModelEntry};
 pub use shell::ShellTool;
 pub use web::{web_fetch, web_search, WebFetchInput, WebFetchOutput, WebSearchInput, WebSearchOutput, SearchHit};
+pub use image::{generate_image, ImageGenInput, ImageGenOutput, ImageProvider};

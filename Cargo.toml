@@ -16,6 +16,9 @@ members = [
     "backend/companion",
     "backend/hooks",
     "backend/plugins",
+    "backend/understanding",
+    "backend/sandbox",
+    "backend/routing",
 ]
 resolver = "2"
 
