@@ -59,6 +59,22 @@ impl LlmPlanner {
              system_prompt.push_str("\nTo use a tool, reply in the format:\nAction: ToolName(arg1=\"value\", arg2=\"value\")\n");
         }
 
+        // Inject skills context if agent has skills
+        if !request.agent.allowed_skills.is_empty() {
+             system_prompt.push_str("\n\n=== AVAILABLE SKILLS ===\n");
+             for skill in &request.agent.allowed_skills {
+                 match crate::skills::load_skill(skill).await {
+                     Ok(content) => {
+                         system_prompt.push_str(&format!("\n--- SKILL: {} ---\n{}\n-------------------\n", skill, content));
+                     }
+                     Err(e) => {
+                         warn!(%skill, error = %e, "Failed to load skill for agent prompt");
+                     }
+                 }
+             }
+             system_prompt.push_str("========================\n");
+        }
+
         let llm_request = LlmRequest {
             model: request.agent.llm_policy.model.clone(),
             system_prompt,

@@ -17,6 +17,8 @@ pub struct AgentSpec {
     pub workflow: Vec<WorkflowStep>,
     #[serde(default)]
     pub allowed_tools: Vec<String>, // List of tool names
+    #[serde(default)]
+    pub allowed_skills: Vec<String>, // List of skill names to inject
 }
 
 /// The role an agent plays in the system.
@@ -49,6 +51,7 @@ impl AgentSpec {
             memory_config: None,
             workflow: Vec::new(),
             allowed_tools: Vec::new(),
+            allowed_skills: Vec::new(),
         }
     }
 }
