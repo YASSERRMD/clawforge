@@ -20,6 +20,16 @@ pub struct Config {
     pub bluebubbles_server_url: Option<String>,
     pub bluebubbles_password: Option<String>,
     pub bluebubbles_webhook_path: String,
+    
+    // Slack
+    pub slack_signing_secret: Option<String>,
+    pub slack_bot_token: Option<String>,
+    pub slack_webhook_path: String,
+    
+    // Matrix
+    pub matrix_homeserver_url: Option<String>,
+    pub matrix_access_token: Option<String>,
+    pub matrix_user_id: Option<String>,
 }
 
 impl Default for Config {
@@ -34,6 +44,12 @@ impl Default for Config {
             bluebubbles_server_url: None,
             bluebubbles_password: None,
             bluebubbles_webhook_path: "/webhooks/bluebubbles".to_string(),
+            slack_signing_secret: None,
+            slack_bot_token: None,
+            slack_webhook_path: "/webhooks/slack".to_string(),
+            matrix_homeserver_url: None,
+            matrix_access_token: None,
+            matrix_user_id: None,
         }
     }
 }
@@ -58,6 +74,13 @@ impl Config {
             bluebubbles_password: std::env::var("BLUEBUBBLES_PASSWORD").ok(),
             bluebubbles_webhook_path: std::env::var("BLUEBUBBLES_WEBHOOK_PATH")
                 .unwrap_or_else(|_| "/webhooks/bluebubbles".to_string()),
+            slack_signing_secret: std::env::var("SLACK_SIGNING_SECRET").ok(),
+            slack_bot_token: std::env::var("SLACK_BOT_TOKEN").ok(),
+            slack_webhook_path: std::env::var("SLACK_WEBHOOK_PATH")
+                .unwrap_or_else(|_| "/webhooks/slack".to_string()),
+            matrix_homeserver_url: std::env::var("MATRIX_HOMESERVER_URL").ok(),
+            matrix_access_token: std::env::var("MATRIX_ACCESS_TOKEN").ok(),
+            matrix_user_id: std::env::var("MATRIX_USER_ID").ok(),
         }
     }
 }

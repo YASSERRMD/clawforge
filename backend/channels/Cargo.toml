@@ -17,6 +17,10 @@ uuid = { workspace = true, features = ["v4"] }
 # Channel specific
 teloxide = "0.13" # Telegram
 serenity = "0.12" # Discord
-axum = { workspace = true } # For webhooks (WhatsApp)
-reqwest = { version = "0.12", features = ["json"] } # BlueBubbles
+axum = { workspace = true } # For webhooks
+reqwest = { version = "0.12", features = ["json"] } # BlueBubbles + Slack + Matrix
+hmac = "0.12" # Slack signature verification
+sha2 = "0.10" # Slack signature verification
+hex = "0.4"   # Slack signature encoding
+urlencoding = "2" # Matrix room_id URL encoding
 

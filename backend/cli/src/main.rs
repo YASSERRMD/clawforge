@@ -197,6 +197,48 @@ async fn run_server(config: Config) -> Result<()> {
         info!("Registered BlueBubbles channel adapter");
     }
 
+    // Slack adapter
+    let mut slack_router = None;
+    if let (Some(secret), Some(token)) = (&config.slack_signing_secret, &config.slack_bot_token) {
+        use clawforge_channels::slack::{SlackAdapter, SlackConfig};
+        use clawforge_channels::ChannelAdapter;
+        let sc = SlackConfig {
+            signing_secret: secret.clone(),
+            bot_token: token.clone(),
+            webhook_path: config.slack_webhook_path.clone(),
+        };
+        let sa = SlackAdapter::new(sc, bus.supervisor_tx.clone());
+        slack_router = Some(sa.build_router());
+        let sup_tx = bus.supervisor_tx.clone();
+        tokio::spawn(async move {
+            let _ = sa.start(sup_tx).await;
+        });
+        info!("Registered Slack channel adapter");
+    }
+
+    // Matrix adapter
+    if let (Some(hs), Some(token), Some(user)) = (
+        &config.matrix_homeserver_url,
+        &config.matrix_access_token,
+        &config.matrix_user_id,
+    ) {
+        use clawforge_channels::matrix::{MatrixAdapter, MatrixConfig};
+        use clawforge_channels::ChannelAdapter;
+        let mc = MatrixConfig {
+            homeserver_url: hs.clone(),
+            access_token: token.clone(),
+            user_id: user.clone(),
+        };
+        let ma = MatrixAdapter::new(mc, bus.supervisor_tx.clone());
+        let sup_tx = bus.supervisor_tx.clone();
+        tokio::spawn(async move {
+            if let Err(e) = ma.start(sup_tx).await {
+                error!("Matrix adapter failed: {}", e);
+            }
+        });
+        info!("Registered Matrix channel adapter");
+    }
+
     // Start HTTP API
     let app_state = Arc::new(AppState {
         supervisor: Arc::clone(&supervisor),
@@ -205,7 +247,11 @@ async fn run_server(config: Config) -> Result<()> {
         supervisor_tx: bus.supervisor_tx.clone(),
     });
 
-    let app = api::build_router(app_state, bb_router).layer(CorsLayer::permissive());
+    // Merge all optional channel routers
+    let mut app = api::build_router(app_state, bb_router).layer(CorsLayer::permissive());
+    if let Some(sr) = slack_router {
+        app = app.merge(sr);
+    }
     let addr = format!("{}:{}", config.bind_address, config.port);
 
     info!(addr = %addr, "HTTP API listening");
