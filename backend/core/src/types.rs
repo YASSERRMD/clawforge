@@ -79,6 +79,24 @@ pub struct Capabilities {
     pub max_cost_per_run_usd: Option<f64>,
 }
 
+/// The current state of an agent run.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RunState {
+    Active,
+    Paused,
+    AwaitingInput(String), // Prompt for the user
+    Cancelled,
+    Completed,
+    Failed,
+}
+
+impl Default for RunState {
+    fn default() -> Self {
+        Self::Active
+    }
+}
+
 /// LLM provider selection policy.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LlmPolicy {

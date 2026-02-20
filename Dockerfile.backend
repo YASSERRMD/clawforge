@@ -1,0 +1,69 @@
+# Builder stage
+FROM rust:1.80-slim-bullseye as builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+
+# Copy workspace configuration
+COPY Cargo.toml Cargo.lock ./
+
+# Create dummy crates to cache dependencies
+# We need to mirror the workspace structure
+RUN mkdir -p backend/core/src && echo "fn main() {}" > backend/core/src/lib.rs && touch backend/core/src/main.rs
+RUN mkdir -p backend/tools/src && echo "fn main() {}" > backend/tools/src/lib.rs
+RUN mkdir -p backend/planner/src && echo "fn main() {}" > backend/planner/src/lib.rs
+RUN mkdir -p backend/executor/src && echo "fn main() {}" > backend/executor/src/lib.rs
+RUN mkdir -p backend/scheduler/src && echo "fn main() {}" > backend/scheduler/src/lib.rs
+RUN mkdir -p backend/supervisor/src && echo "fn main() {}" > backend/supervisor/src/lib.rs
+RUN mkdir -p backend/cli/src && echo "fn main() {}" > backend/cli/src/main.rs
+
+# Copy TOMLs
+COPY backend/core/Cargo.toml backend/core/
+COPY backend/tools/Cargo.toml backend/tools/
+COPY backend/planner/Cargo.toml backend/planner/
+COPY backend/executor/Cargo.toml backend/executor/
+COPY backend/scheduler/Cargo.toml backend/scheduler/
+COPY backend/supervisor/Cargo.toml backend/supervisor/
+COPY backend/cli/Cargo.toml backend/cli/
+
+# Build dependencies
+# RUN cargo build --release --bin clawforge
+# optimizing cache is tricky with workspace + path dependencies without cargo-chef.
+# For simplicity in this phase, we'll just copy everything and build.
+# If build times are slow, we will add cargo-chef later.
+
+COPY . .
+
+# Build the application
+RUN cargo build --release --bin clawforge
+
+# Runtime stage
+FROM debian:bullseye-slim
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y ca-certificates libssl1.1 && rm -rf /var/lib/apt/lists/*
+
+# Copy binary from builder
+COPY --from=builder /app/target/release/clawforge /usr/local/bin/clawforge
+
+# Create data directory
+RUN mkdir -p /data
+
+# Set environment variables
+ENV CLAWFORGE_BIND_ADDRESS=0.0.0.0
+ENV CLAWFORGE_PORT=3000
+ENV CLAWFORGE_DB_PATH=/data/clawforge.db
+ENV RUST_LOG=info
+
+# Expose port
+EXPOSE 3000
+
+# Volume for persistence
+VOLUME ["/data"]
+
+# Run the binary
+CMD ["clawforge", "serve"]
