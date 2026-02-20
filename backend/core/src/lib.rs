@@ -2,6 +2,7 @@ pub mod channel;
 pub mod error;
 pub mod event;
 pub mod message;
+pub mod session_export;
 pub mod tools;
 pub mod traits;
 pub mod types;
@@ -16,3 +17,4 @@ pub use traits::{Component, Tool, LlmProvider, LlmRequest, LlmResponse};
 pub use types::{
     ActionType, AgentSpec, Capabilities, FailurePolicy, LlmPolicy, TriggerSpec, WorkflowStep, MemoryConfig, Role,
 };
+pub use session_export::{session_slug, SessionExporter, SessionMessage};
