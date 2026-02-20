@@ -1,76 +1,107 @@
-# ClawForge
+# 🦞 ClawForge — Personal AI Assistant Runtime
 
-**ClawForge** is a blazing-fast, robust AI agent runtime built in Rust. It serves as an experimental implementation of the OpenClaw standard, designed to orchestrate autonomous agents with advanced tooling, memory, and perception capabilities.
+<p align="center">
+  <strong>The experimental, blazingly fast Rust implementation of the OpenClaw standard.</strong>
+</p>
 
-## Architecture
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/Rust-1.80+-orange.svg?style=for-the-badge" alt="Rust Version">
+</p>
 
-ClawForge is designed as a multi-crate Rust workspace leveraging an event-driven, actor-like architecture connected via a central `ClawBus` (using Tokio channels).
+**ClawForge** is a _personal AI assistant runtime_ you run on your own devices, achieving identical topology to the [OpenClaw](https://openclaw.ai) reference implementation but built entirely in Rust for maximum performance, multi-threading, and memory safety.
 
-### Core Components
-- **`clawforge-core`**: Defines the shared vocabulary (`AgentSpec`, `Message`, `Event`, `Tool` trait).
-- **`clawforge-scheduler`**: Evaluates cron expressions and webhook triggers to wake up agents.
-- **`clawforge-planner`**: Interacts with LLM providers (OpenRouter, Ollama) and handles tool-call parsing and reasoning.
-- **`clawforge-executor`**: Sandboxes and executes tools (Browser, Node, Shell/Docker) and returns observations.
-- **`clawforge-supervisor`**: Tracks run state (HITL, Cancellation), handles safety/budget policies, and persists events to SQLite.
-- **`clawforge-tools`**: The standard library of capabilities (CDP Browser, Node Invocation, File I/O).
-- **`clawforge-memory`**: Vector store implementation for RAG and agent reflection.
-- **`clawforge-channels`**: Integration adapters for Telegram, Discord, and WhatsApp.
-- **`clawforge-media`**: Pipeline for handling audio STT and image perception.
+It orchestrates autonomous agents over a central WebSocket control plane (Gateway) to interact across channels (WhatsApp, Telegram, Discord), perform actions via Tools (`browser.control`, Docker sandboxing), and manage memory.
 
-### Frontend Dashboard
-The `frontend` directory contains a Vite + React + TypeScript dashboard. It provides:
-- Live streaming of agent events via Server Data (SSE/WebSockets).
-- A unified "Agent-to-UI" (A2UI) Canvas.
-- Controls for pausing, cancelling, and providing Human-in-the-loop (HITL) input to agents.
+## Install & Quick Start
 
-## Getting Started
+Requires **Rust ≥ 1.80** and **Node ≥ 20** (for frontend UI).
 
-### Prerequisites
-- [Rust](https://rustup.rs/) (1.80+)
-- [Node.js](https://nodejs.org/) (v20+)
-- [Docker](https://www.docker.com/) (For sandboxing and deployment)
-- SQLite
+```bash
+# Clone and build the workspace
+git clone https://github.com/YASSERRMD/clawforge.git
+cd clawforge
 
-### Running Locally
+# Export required configs
+export OPENROUTER_API_KEY="sk-or-v1-..."
 
-1. **Start the Backend**
-   ```bash
-   # Export required API keys
-   export OPENROUTER_API_KEY="sk-or-v1-..."
-   
-   # Run the server on port 3000
-   cargo run -p clawforge-cli -- serve --port 3000
-   ```
+# Run the local-first Gateway Daemon
+cargo run -p clawforge-cli -- serve --port 3000
+```
 
-2. **Start the Frontend**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-   The dashboard will be available at `http://localhost:5173`.
+Start the frontend dashboard in a separate terminal:
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-### Docker Deployment
-You can easily spin up both the backend and frontend using Docker Compose:
+Alternatively, run everything via Docker Compose:
 ```bash
 docker-compose up --build
 ```
-This serves the API on `:3000` and the static frontend UI on `:8080`.
 
-## Advanced Features
+## Highlights
 
-### Nix Environment
-A `flake.nix` is provided for fully reproducible development environments. 
-```bash
-nix develop
-```
+- **Local-first Rust Gateway** — A robust Tokip-based WebSocket control plane for sessions, tools, and events.
+- **Multi-channel integration** — Adapters for WhatsApp, Telegram, and Discord via the `clawforge-channels` crate.
+- **Advanced Tooling & Security** — Out of the box CDP browser automation and strict Docker sandboxing for untrusted bash/python executions.
+- **Media Pipeline** — Dedicated crate for STT transcription hooks and Vision payloads.
+- **Tailscale Serve** — Natively bind the runtime to Tailscale for secure remote access.
+- **Declarative Environments** — Fully reproducible developer environment via `flake.nix`.
 
-### Tailscale Serve
-The runtime can automatically bind to a Tailscale funnel for secure, remote UI access without exposing ports:
+## Everything We Built So Far
+
+### Core Platform
+- **`clawforge-core`**: The central vocabulary schemas (`AgentSpec`, `Message`, `Event`).
+- **`clawforge-scheduler`**: Cron and Webhook evaluations that wake up agents.
+- **`clawforge-planner`**: LLM provider integrations (OpenRouter, Ollama) with tool-call parsing and Reflection.
+- **`clawforge-executor`**: Sandboxes and evaluates actions.
+- **`clawforge-supervisor`**: SQLite persistence, policy checks, run state tracking (Active, Paused, AwaitingInput).
+- **`clawforge-memory`**: Vector store implementations for RAG.
+
+### Apps + Nodes (Stubs)
+- Built stubs for macOS native app and mobile companion nodes.
+- Engineered a `Canvas` React component in the Frontend for Agent-to-UI visual workspace control.
+
+## Planned Missing OpenClaw Features (WIP Phases)
+
+Compared to the upstream `openclaw` repository, ClawForge is expanding next into:
+
+- **Skills Registry (Phase 13)**: Connecting to ClawHub for dynamic integrations (Notion, GitHub, 1Password).
+- **Expanded Channels (Phase 14)**: Slack, BlueBubbles (iMessage), Matrix, and MS Teams adapters.
+- **Full Control UI & Bots (Phase 15)**: Replacing stubs with full WebChat, Moltbot, and Clawdbot profiles.
+- **Complete Native Apps (Phase 16)**: Bringing the full macOS menu bar app and iOS/Android capabilities (Voice Wake, Screen Recording).
+
+## Security Model (Important)
+
+OpenClaw connects to real messaging surfaces. Treat inbound DMs as **untrusted input**. 
+In ClawForge, any `ShellTool` executions are strictly evaluated. For group/channel safety, you can enforce execution to route through isolated Docker containers instead of the host machine, matching the OpenClaw sandboxing specs.
+
+## Configuration
+
+ClawForge uses TOML bridging and environment variables. Tailscale access can be enabled quickly:
 ```bash
 export CLAWFORGE_ENABLE_TAILSCALE=1
 cargo run -p clawforge-cli -- serve
 ```
 
-## Status
-ClawForge has achieved feature parity with the OpenClaw Phase 1-12 specifications. Future work will focus on expanding the native Node ecosystem (macOS/Mobile) and stabilizing the Canvas data layer.
+## Structure
+```
+WhatsApp / Telegram / Slack / Discord / WebChat
+               │
+               ▼
+┌───────────────────────────────┐
+│        ClawForge Gateway      │
+│       (Rust control plane)    │
+│     ws://127.0.0.1:3000       │
+└──────────────┬────────────────┘
+               │
+               ├─ Planner (LLM RPC)
+               ├─ Supervisor (SQLite)
+               ├─ Tools (CDP/Docker)
+               └─ Frontend Web Dashboard
+``` 
+
+## Community
+AI/vibe-coded PRs welcome! We are consistently tracking the `openclaw` reference repository and mapping its TypeScript concepts to idiomatic Rust abstractions.
