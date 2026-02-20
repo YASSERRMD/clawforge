@@ -1,9 +1,10 @@
 [package]
-name = "clawforge-memory"
+name = "clawforge-acp"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+clawforge-core = { path = "../core" }
 anyhow.workspace = true
 async-trait.workspace = true
 serde = { workspace = true, features = ["derive"] }
@@ -12,9 +13,5 @@ tokio = { workspace = true, features = ["full"] }
 uuid = { workspace = true, features = ["v4", "serde"] }
 tracing.workspace = true
 chrono.workspace = true
-
-# Durable SQLite storage
-rusqlite = { version = "0.32", features = ["bundled"] }
-
-# Embedding providers (HTTP clients)
 reqwest = { version = "0.12", features = ["json"] }
+axum = { workspace = true }
