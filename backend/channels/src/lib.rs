@@ -14,6 +14,8 @@ pub mod discord_slash;
 pub mod discord_threads;
 pub mod discord_voice;
 pub mod whatsapp;
+pub mod wa_media;
+pub mod wa_groups;
 
 // --------------- Phase 14 web-hook adapters ---------------
 pub mod bluebubbles;
