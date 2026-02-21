@@ -20,6 +20,10 @@ pub mod mattermost;
 pub mod msteams;
 pub mod signal;
 
+// --------------- Phase 75 rate limiting ---------------
+pub mod rate_limiter;
+pub use rate_limiter::{ChannelRateLimiter, RateLimitPolicy, RateLimitResult};
+
 /// All channel adapters implement this trait.
 #[async_trait]
 pub trait ChannelAdapter: Send + Sync {
