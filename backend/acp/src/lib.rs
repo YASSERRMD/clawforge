@@ -3,6 +3,8 @@ pub mod registry;
 pub mod server;
 pub mod telemetry;
 pub mod types;
+pub mod canvas_host;
+pub mod acp_announce;
 
 pub use client::AcpClient;
 pub use registry::{SubAgentRegistry, MAX_SUBAGENT_DEPTH};
