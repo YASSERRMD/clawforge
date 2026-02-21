@@ -1,0 +1,21 @@
+[package]
+name = "clawforge-agent"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+tokio = { workspace = true, features = ["full"] }
+tracing.workspace = true
+async-trait.workspace = true
+uuid = { workspace = true, features = ["v4", "serde"] }
+moka = { version = "0.12", features = ["sync"] }
+clawforge-core = { path = "../core" }
+clawforge-tools = { path = "../tools" }
+clawforge-channels = { path = "../channels" }
+clawforge-memory = { path = "../memory" }
+clawforge-plugins = { path = "../plugins" }
+clawforge-routing = { path = "../routing" }
+clawforge-scheduler = { path = "../scheduler" }
