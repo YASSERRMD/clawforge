@@ -13,11 +13,13 @@ use tracing::{info, instrument};
 
 use crate::control_ui;
 use crate::openai_compat;
+use crate::ws_server;
+use crate::session_registry::SessionRegistry;
 
 /// Application state shared across routes.
 #[derive(Clone)]
 pub struct GatewayState {
-    // In a full implementation, this holds references to the AgentRunner, registry, config, etc.
+    pub session_registry: SessionRegistry,
 }
 
 /// Starts the main Axum HTTP server for the gateway.
@@ -28,6 +30,8 @@ pub async fn start_server(addr: SocketAddr, state: GatewayState) -> Result<()> {
         // API Endpoints
         .route("/v1/chat/completions", post(openai_compat::chat_completions))
         .route("/api/health", get(|| async { "OK" }))
+        // WebSocket Endpoint
+        .route("/ws", get(ws_server::ws_handler))
         // Control UI Static Files
         .nest("/ui", control_ui::ui_router())
         .with_state(state);

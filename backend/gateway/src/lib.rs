@@ -6,6 +6,9 @@ pub mod config_reload;
 pub mod control_ui;
 pub mod openai_compat;
 pub mod server;
+pub mod session_registry;
+pub mod ws_protocol;
+pub mod ws_server;
 
 pub use config_reload::ConfigReloader;
 pub use server::{start_server, GatewayState};
