@@ -43,10 +43,10 @@ docker-compose up --build
 
 ## Highlights
 
-- **Local-first Rust Gateway** — A robust Tokip-based WebSocket control plane for sessions, tools, and events.
-- **Multi-channel integration** — Adapters for WhatsApp, Telegram, and Discord via the `clawforge-channels` crate.
-- **Advanced Tooling & Security** — Out of the box CDP browser automation and strict Docker sandboxing for untrusted bash/python executions.
-- **Media Pipeline** — Dedicated crate for STT transcription hooks and Vision payloads.
+- **Local-first Rust Gateway** — A robust Tokio-based WebSocket control plane for sessions, tools, and events.
+- **Multi-channel integration** — Full deep adapters for Telegram, Discord, Slack, LINE, iMessage, and WhatsApp via the `clawforge-channels` crate.
+- **Advanced Tooling & Plugins** — Out of the box CDP browser automation, sandboxed WASM Plugin System, and strict Docker sandboxing for untrusted bash/python executions.
+- **Media Pipeline** — Dedicated crate for STT transcription hooks (Deepgram/Whisper), OCR visual text extraction, and document mining.
 - **Tailscale Serve** — Natively bind the runtime to Tailscale for secure remote access.
 - **Declarative Environments** — Fully reproducible developer environment via `flake.nix`.
 
@@ -64,12 +64,19 @@ docker-compose up --build
 - Built stubs for macOS native app and mobile companion nodes.
 - Engineered a `Canvas` React component in the Frontend for Agent-to-UI visual workspace control.
 
+### Deep Adapters & Integrations
+- **`clawforge-channels`**: Complete webhook and websocket adapters for Telegram, Discord, Slack, LINE, iMessage, and WhatsApp.
+- **`clawforge-plugins`**: Sandboxed WASM plugin loader with granular permission scopes and internal event bus.
+- **`clawforge-browser`**: Native CDP client for Playwright-style DOM observation, A11y queries, and synthetic interactions.
+- **`clawforge-understanding`**: Media cracking pipelines for OCR, STT, PDF extraction, and ffmpeg native video thumbnails.
+- **`clawforge-infra` & `clawforge-acp`**: Secure mDNS peer pairing, device identity management, Canvas hosting routines, and hierarchical Agent Control Protocol routing.
+
 ## Planned Missing OpenClaw Features (WIP Phases)
 
 Compared to the upstream `openclaw` repository, ClawForge is expanding next into:
 
 - **Skills Registry (Phase 13)**: Connecting to ClawHub for dynamic integrations (Notion, GitHub, 1Password).
-- **Expanded Channels (Phase 14)**: Slack, BlueBubbles (iMessage), Matrix, and MS Teams adapters.
+- **Long-tail Channels (Phase 25)**: Matrix, Signal, and MS Teams adapters.
 - **Full Control UI & Bots (Phase 15)**: Replacing stubs with full WebChat, Moltbot, and Clawdbot profiles.
 - **Complete Native Apps (Phase 16)**: Bringing the full macOS menu bar app and iOS/Android capabilities (Voice Wake, Screen Recording).
 
