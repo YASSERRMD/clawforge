@@ -1,4 +1,6 @@
+pub mod apply_patch;
 pub mod bash_exec;
+pub mod patch_validator;
 pub mod browser;
 pub mod compaction;
 pub mod cron_tool;
