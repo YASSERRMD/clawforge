@@ -1,5 +1,8 @@
 mod api;
 mod config;
+mod doctor_cmd;
+mod models_cmd;
+mod status_cmd;
 
 use std::sync::Arc;
 
@@ -38,8 +41,12 @@ enum Commands {
         #[arg(short, long)]
         port: Option<u16>,
     },
+    /// Run system diagnostics to check health
+    Doctor,
     /// Show current runtime status
     Status,
+    /// List available LLMs
+    Models,
 }
 
 #[tokio::main]
@@ -65,22 +72,14 @@ async fn main() -> Result<()> {
             };
             run_server(config).await?;
         }
+        Commands::Doctor => {
+            doctor_cmd::run().await?;
+        }
         Commands::Status => {
-            println!("ClawForge status: checking...");
-            let client = reqwest::Client::new();
-            match client
-                .get(format!("http://localhost:{}/api/health", config.port))
-                .send()
-                .await
-            {
-                Ok(resp) => {
-                    let body: serde_json::Value = resp.json().await?;
-                    println!("{}", serde_json::to_string_pretty(&body)?);
-                }
-                Err(_) => {
-                    println!("ClawForge is not running on port {}", config.port);
-                }
-            }
+            status_cmd::run().await?;
+        }
+        Commands::Models => {
+            models_cmd::run().await?;
         }
     }
 
