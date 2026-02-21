@@ -1,0 +1,16 @@
+[package]
+name = "clawforge-gateway"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow.workspace = true
+axum = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+tokio = { workspace = true, features = ["full", "signal"] }
+tracing.workspace = true
+notify = "6.1.1" # for config_reload watch
+uuid = { workspace = true, features = ["v4"] }
+clawforge-core = { path = "../core" }
+clawforge-agent = { path = "../agent" }
