@@ -19,6 +19,8 @@ use crate::rate_limit::RateLimiter;
 use crate::auth_health;
 use crate::health_api;
 use crate::health_monitor::HealthMonitor;
+use crate::responses_api;
+use crate::attachments;
 
 /// Application state shared across routes.
 #[derive(Clone)]
@@ -35,6 +37,8 @@ pub async fn start_server(addr: SocketAddr, state: GatewayState) -> Result<()> {
     let app = Router::new()
         // API Endpoints
         .route("/v1/chat/completions", post(openai_compat::chat_completions))
+        .route("/v1/chat/completions/stream", get(responses_api::stream_completions))
+        .route("/v1/attachments", post(attachments::upload_attachment))
         .route("/api/health", get(health_api::get_health))
         .route("/api/v1/auth/health", get(auth_health::check_auth_health))
         // WebSocket Endpoint
