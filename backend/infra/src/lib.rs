@@ -6,6 +6,9 @@
 pub mod channel_activity;
 pub mod cost_tracker;
 pub mod usage_scanner;
+pub mod device_identity;
+pub mod device_auth_store;
+pub mod device_pairing;
 
 pub use channel_activity::{ChannelActivity, ChannelActivityMonitor};
 pub use cost_tracker::{CostRecord, CostTracker, TokenUsage};
