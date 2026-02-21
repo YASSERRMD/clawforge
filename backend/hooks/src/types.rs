@@ -147,3 +147,39 @@ impl HookResult {
         Self { modified_content: Some(content.into()), ..Default::default() }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Hook trigger (used by evaluator)
+// ---------------------------------------------------------------------------
+
+/// When a hook should fire.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum HookTrigger {
+    Always,
+    OnEvent { event_name: String },
+    OnCondition { condition: HookCondition },
+    OnPattern { pattern: String },
+    OnSchedule { cron: String },
+}
+
+/// A structured condition for hook triggering.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "op", rename_all = "camelCase")]
+pub enum HookCondition {
+    FieldEquals { field: String, value: serde_json::Value },
+    FieldContains { field: String, substring: String },
+    FieldMatches { field: String, regex: String },
+    And { conditions: Vec<HookCondition> },
+    Or { conditions: Vec<HookCondition> },
+    Not { condition: Box<HookCondition> },
+}
+
+/// Runtime context passed to the hook evaluator.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct HookContext {
+    pub event_name: Option<String>,
+    pub message_text: Option<String>,
+    #[serde(default)]
+    pub extra: std::collections::HashMap<String, serde_json::Value>,
+}

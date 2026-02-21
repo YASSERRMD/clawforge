@@ -1,6 +1,7 @@
 pub mod bash_exec;
 pub mod browser;
 pub mod compaction;
+pub mod cron_tool;
 pub mod file;
 pub mod image;
 pub mod loop_detection;
@@ -26,7 +27,7 @@ pub use sessions_tool::{ListSessionsInput, SendToSessionInput, SendToSessionOutp
 pub use shell::ShellTool;
 pub use subagents_tool::{new_subagent_id, SpawnSubagentInput, SpawnSubagentOutput, SteerSubagentInput, StopSubagentInput, SubagentBackend, SubagentEntry, SubagentRegistry, SubagentStatus};
 pub use web::{web_fetch, web_search, WebFetchInput, WebFetchOutput, WebSearchInput, WebSearchOutput, SearchHit};
-pub use bash_exec::{exec_command, ExecConfig, ExecHost, ExecResult};
+pub use cron_tool::{CronBackend, CronJob, CronToolInput, CronToolOutput, InMemoryCronBackend, run_cron_tool, CreateCronInput, UpdateCronInput};
 pub use image::{generate_image, ImageGenInput, ImageGenOutput, ImageProvider};
 pub use process_registry::{ProcessEntry, ProcessRegistry};
 pub use skill_install::{SkillInstaller, SkillInstallResult, SkillSource};
