@@ -2,6 +2,7 @@
 //!
 //! Provides the REST API, OpenAI compatibility layer, and Control UI static hosting.
 
+pub mod attachments;
 pub mod auth;
 pub mod auth_health;
 pub mod config_reload;
@@ -10,6 +11,7 @@ pub mod health_api;
 pub mod health_monitor;
 pub mod openai_compat;
 pub mod rate_limit;
+pub mod responses_api;
 pub mod server;
 pub mod session_registry;
 pub mod ws_protocol;
