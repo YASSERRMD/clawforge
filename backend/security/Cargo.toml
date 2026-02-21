@@ -15,4 +15,6 @@ uuid = { workspace = true, features = ["v4", "serde"] }
 regex = "1"
 sha2 = "0.10"
 hex = "0.4"
+rand = "0.8"
+once_cell.workspace = true
 rusqlite = { version = "0.32", features = ["bundled"] }

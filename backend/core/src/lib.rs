@@ -3,6 +3,7 @@ pub mod error;
 pub mod event;
 pub mod message;
 pub mod session_export;
+pub mod session_policy;
 pub mod tools;
 pub mod traits;
 pub mod types;
