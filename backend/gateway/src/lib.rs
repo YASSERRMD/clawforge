@@ -6,6 +6,8 @@ pub mod auth;
 pub mod auth_health;
 pub mod config_reload;
 pub mod control_ui;
+pub mod health_api;
+pub mod health_monitor;
 pub mod openai_compat;
 pub mod rate_limit;
 pub mod server;
