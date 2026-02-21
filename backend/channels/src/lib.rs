@@ -9,6 +9,10 @@ pub mod telegram_groups;
 pub mod telegram_inline;
 pub mod telegram_media;
 pub mod discord;
+pub mod discord_embeds;
+pub mod discord_slash;
+pub mod discord_threads;
+pub mod discord_voice;
 pub mod whatsapp;
 
 // --------------- Phase 14 web-hook adapters ---------------
