@@ -16,3 +16,4 @@ uuid = { workspace = true, features = ["v4"] }
 
 # Media Specific
 bytes = "1.5"
+axum = { workspace = true }

@@ -7,6 +7,11 @@ use uuid::Uuid;
 
 pub mod audio;
 pub mod image;
+pub mod media_server;
+pub mod mime_detect;
+
+pub use media_server::media_router;
+pub use mime_detect::{detect_mime_type, is_audio, is_image, is_inline_safe, is_video};
 
 #[derive(Debug, Clone)]
 pub struct MediaPayload {

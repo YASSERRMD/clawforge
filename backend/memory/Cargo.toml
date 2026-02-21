@@ -12,6 +12,8 @@ tokio = { workspace = true, features = ["full"] }
 uuid = { workspace = true, features = ["v4", "serde"] }
 tracing.workspace = true
 chrono.workspace = true
+futures = "0.3"
+async-recursion = "1"
 
 # Durable SQLite storage
 rusqlite = { version = "0.32", features = ["bundled"] }

@@ -1,18 +1,24 @@
 pub mod batch_embed;
 pub mod embeddings;
 pub mod hybrid;
+pub mod manager;
 pub mod mmr;
 pub mod qmd_manager;
+pub mod query_expansion;
 pub mod sqlite_store;
 pub mod store;
+pub mod sync_pipeline;
 pub mod temporal;
 pub mod types;
 
 pub use embeddings::{create_provider, EmbeddingProvider, EmbeddingProviderKind};
 pub use hybrid::hybrid_rerank;
+pub use manager::{ManagedSearchResult, MemoryManager, MemorySearchOptions};
 pub use mmr::mmr_rerank;
+pub use query_expansion::{average_embeddings, expand_query, QueryExpansionRequest, QueryExpansionResult};
 pub use sqlite_store::SqliteVecStore;
 pub use store::{InMemoryVectorStore, MemoryStore};
+pub use sync_pipeline::{chunk_text, detect_changes, FileChange, ChangeKind, SyncState, INDEXABLE_EXTENSIONS};
 pub use temporal::apply_decay;
 pub use batch_embed::{BatchEmbedder, BatchEmbedProvider, EmbedItem, EmbedResult};
 pub use qmd_manager::{QmdConfig, QmdCollection, QmdMemoryManager, QmdSearchResult};

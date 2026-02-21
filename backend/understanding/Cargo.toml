@@ -11,3 +11,5 @@ tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "multipart"], default-features = false }
 base64 = "0.22"
+regex.workspace = true
+once_cell.workspace = true
