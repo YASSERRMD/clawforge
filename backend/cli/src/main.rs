@@ -3,6 +3,9 @@ mod config;
 mod doctor_cmd;
 mod models_cmd;
 mod status_cmd;
+mod agents_cmd;
+mod memory_cmd;
+mod sessions_cmd;
 
 use std::sync::Arc;
 
@@ -47,6 +50,21 @@ enum Commands {
     Status,
     /// List available LLMs
     Models,
+    /// Manage active sessions
+    Sessions {
+        #[command(subcommand)]
+        command: sessions_cmd::SessionCommands,
+    },
+    /// Manage running agents
+    Agents {
+        #[command(subcommand)]
+        command: agents_cmd::AgentCommands,
+    },
+    /// Manage vector memory
+    Memory {
+        #[command(subcommand)]
+        command: memory_cmd::MemoryCommands,
+    },
 }
 
 #[tokio::main]
@@ -80,6 +98,15 @@ async fn main() -> Result<()> {
         }
         Commands::Models => {
             models_cmd::run().await?;
+        }
+        Commands::Sessions { command } => {
+            sessions_cmd::run(command).await?;
+        }
+        Commands::Agents { command } => {
+            agents_cmd::run(command).await?;
+        }
+        Commands::Memory { command } => {
+            memory_cmd::run(command).await?;
         }
     }
 
