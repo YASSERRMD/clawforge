@@ -21,7 +21,7 @@ members = [
     "backend/routing",
     "backend/commands",
     "backend/daemon",
-    "backend/config", "backend/agent", "backend/gateway", "backend/infra", "backend/logging",
+    "backend/config", "backend/agent", "backend/gateway", "backend/infra", "backend/logging", "backend/markdown",
 ]
 resolver = "2"
 
