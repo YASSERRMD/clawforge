@@ -4,8 +4,10 @@
 //! prompt building, and tool dispatching.
 
 pub mod agent_loop;
+pub mod assistant_identity;
 pub mod chat;
 pub mod context_window;
+pub mod prompt_cache;
 pub mod session_state;
 pub mod system_prompt;
 pub mod tool_dispatcher;

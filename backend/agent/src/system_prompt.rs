@@ -2,17 +2,32 @@
 //!
 //! Mirrors `src/agents/agent-prompt.ts` and `src/agents/assistant-identity.ts`.
 
-use crate::session_state::SessionState;
+use crate::assistant_identity::AssistantIdentity;
 use crate::chat::ChatMessage;
+use crate::prompt_cache::PromptCache;
+use crate::session_state::SessionState;
+use std::sync::Arc;
 
-pub struct PromptBuilder;
+pub struct PromptBuilder {
+    cache: Arc<PromptCache>,
+}
 
 impl PromptBuilder {
+    pub fn new(cache: Arc<PromptCache>) -> Self {
+        Self { cache }
+    }
+
     /// Builds the monolithic system prompt that configures the agent's behavior.
-    pub fn build(session: &SessionState) -> ChatMessage {
+    pub fn build(&self, session: &SessionState, identity: &AssistantIdentity) -> ChatMessage {
+        let cache_key = format!("{}:{}", session.session_id, session.agent_id);
+
+        if let Some(cached) = self.cache.get(&cache_key) {
+            return cached;
+        }
+
         // Collect core identity
-        let persona = Self::build_identity(&session.agent_id);
-        
+        let persona = identity.compile();
+
         // Collect memory snippets (mocked here)
         let memory = "No additional memory.";
 
@@ -25,14 +40,8 @@ impl PromptBuilder {
             persona, memory, tools
         );
 
-        ChatMessage::system(content)
-    }
-
-    fn build_identity(agent_id: &str) -> String {
-        format!(
-            "You are {}, an advanced AI agent powered by ClawForge. \
-            Your goal is to assist the user proactively and securely.",
-            agent_id
-        )
+        let msg = ChatMessage::system(content);
+        self.cache.insert(cache_key, msg.clone());
+        msg
     }
 }

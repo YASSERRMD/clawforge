@@ -11,6 +11,7 @@ tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true
 async-trait.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
+moka = { version = "0.12", features = ["sync"] }
 clawforge-core = { path = "../core" }
 clawforge-tools = { path = "../tools" }
 clawforge-channels = { path = "../channels" }

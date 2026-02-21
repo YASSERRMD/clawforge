@@ -10,6 +10,8 @@ use tracing::{debug, error, info, instrument, warn};
 
 use crate::chat::{ChatMessage, ToolCallRequest};
 use crate::context_window::ContextWindow;
+use crate::assistant_identity::AssistantIdentity;
+use crate::prompt_cache::PromptCache;
 use crate::session_state::SessionState;
 use crate::system_prompt::PromptBuilder;
 use crate::tool_dispatcher::ToolDispatcher;
@@ -31,6 +33,8 @@ pub enum StepResult {
 pub struct AgentRunner {
     pub session: Arc<tokio::sync::RwLock<SessionState>>,
     pub tool_dispatcher: Arc<ToolDispatcher>,
+    pub prompt_builder: Arc<PromptBuilder>,
+    pub identity: Arc<AssistantIdentity>,
     pub max_steps: usize,
 }
 
@@ -39,9 +43,15 @@ impl AgentRunner {
         session: Arc<tokio::sync::RwLock<SessionState>>,
         tool_dispatcher: Arc<ToolDispatcher>,
     ) -> Self {
+        let cache = Arc::new(PromptCache::new());
+        let prompt_builder = Arc::new(PromptBuilder::new(cache));
+        let identity = Arc::new(AssistantIdentity::default());
+        
         Self {
             session,
             tool_dispatcher,
+            prompt_builder,
+            identity,
             max_steps: 10, // Max chain length prevent infinite loops
         }
     }
@@ -108,7 +118,7 @@ impl AgentRunner {
         let context = ContextWindow::build(&session.transcript, session.model_config.max_context_tokens);
         
         // 2. Build system prompt
-        let _sys_prompt = PromptBuilder::build(&session);
+        let _sys_prompt = self.prompt_builder.build(&session, &self.identity);
 
         // 3. Call LLM (abstracted behind some interface, mock for now)
         // TODO: call actual LLM provider via `planner` or `providers` crate
