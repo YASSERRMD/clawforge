@@ -4,6 +4,10 @@ use tokio::sync::mpsc;
 
 // --------------- Original adapters ---------------
 pub mod telegram;
+pub mod telegram_commands;
+pub mod telegram_groups;
+pub mod telegram_inline;
+pub mod telegram_media;
 pub mod discord;
 pub mod whatsapp;
 
