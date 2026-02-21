@@ -18,6 +18,9 @@ pub mod whatsapp;
 // --------------- Phase 14 web-hook adapters ---------------
 pub mod bluebubbles;
 pub mod slack;
+pub mod slack_events;
+pub mod slack_blocks;
+pub mod slack_modals;
 pub mod matrix;
 
 // --------------- Phase 25 long-tail adapters ---------------
