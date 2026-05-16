@@ -14,6 +14,7 @@ use clap::{Parser, Subcommand};
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
 use tower_http::cors::CorsLayer;
+use tower_http::limit::RequestBodyLimitLayer;
 use tracing::{error, info};
 
 use clawforge_core::ClawBus;
@@ -276,8 +277,11 @@ async fn run_server(config: Config) -> Result<()> {
         supervisor_tx: bus.supervisor_tx.clone(),
     });
 
-    // Merge all optional channel routers
-    let mut app = api::build_router(app_state, bb_router).layer(CorsLayer::permissive());
+    // Merge all optional channel routers.
+    // Limit request bodies to 4 MB to prevent DoS via unlimited payload uploads.
+    let mut app = api::build_router(app_state, bb_router)
+        .layer(RequestBodyLimitLayer::new(4 * 1024 * 1024))
+        .layer(CorsLayer::permissive());
     if let Some(sr) = slack_router {
         app = app.merge(sr);
     }

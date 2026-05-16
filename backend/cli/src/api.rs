@@ -1,15 +1,32 @@
 use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc};
 use axum::{
-    extract::{State, ws::{WebSocketUpgrade, WebSocket, Message}},
+    extract::{State, Query, ws::{WebSocketUpgrade, WebSocket, Message}},
     http::StatusCode,
-    response::{Json, IntoResponse},
+    response::{Json, IntoResponse, Response},
     routing::get,
     Router,
 };
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct PaginationParams {
+    #[serde(default = "default_limit")]
+    limit: usize,
+    #[serde(default)]
+    offset: usize,
+}
+
+fn default_limit() -> usize { 20 }
 use serde_json::{json, Value};
 use tokio_stream::wrappers::BroadcastStream;
 use futures::{sink::SinkExt, stream::StreamExt};
+
+/// Standardized JSON error response returned by all API handlers.
+fn api_error(status: StatusCode, code: &str, message: &str) -> Response {
+    let body = Json(json!({ "error": code, "message": message }));
+    (status, body).into_response()
+}
 
 // Removed duplicate import
 use clawforge_core::{Event, AgentSpec, Message as CoreMessage};
@@ -85,13 +102,20 @@ async fn health() -> Json<Value> {
     }))
 }
 
-/// Get recent runs.
-async fn get_runs(State(state): State<Arc<AppState>>) -> Result<Json<Value>, StatusCode> {
-    match state.supervisor.get_recent_runs(50) {
-        Ok(runs) => Ok(Json(json!({ "runs": runs }))),
+/// Get recent runs with optional pagination (?limit=20&offset=0).
+async fn get_runs(
+    State(state): State<Arc<AppState>>,
+    Query(page): Query<PaginationParams>,
+) -> Response {
+    let limit = page.limit.min(200);
+    match state.supervisor.get_recent_runs(page.offset + limit) {
+        Ok(mut runs) => {
+            runs = runs.into_iter().skip(page.offset).take(limit).collect();
+            Json(json!({ "runs": runs, "limit": limit, "offset": page.offset })).into_response()
+        }
         Err(e) => {
             tracing::error!(error = %e, "Failed to fetch runs");
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            api_error(StatusCode::INTERNAL_SERVER_ERROR, "fetch_runs_failed", "Could not retrieve runs")
         }
     }
 }
@@ -100,23 +124,30 @@ async fn get_runs(State(state): State<Arc<AppState>>) -> Result<Json<Value>, Sta
 async fn get_run_details(
     State(state): State<Arc<AppState>>,
     axum::extract::Path(run_id): axum::extract::Path<uuid::Uuid>,
-) -> Result<Json<Value>, StatusCode> {
+) -> Response {
     match state.supervisor.get_run_summary(&run_id) {
-        Ok(summary) => Ok(Json(summary)),
+        Ok(summary) => Json(summary).into_response(),
         Err(e) => {
             tracing::error!(error = %e, "Failed to fetch run details");
-            Err(StatusCode::NOT_FOUND)
+            api_error(StatusCode::NOT_FOUND, "run_not_found", &format!("Run {} not found", run_id))
         }
     }
 }
 
-/// List all registered agents.
-async fn list_agents(State(state): State<Arc<AppState>>) -> Result<Json<Value>, StatusCode> {
+/// List registered agents with optional pagination (?limit=20&offset=0).
+async fn list_agents(
+    State(state): State<Arc<AppState>>,
+    Query(page): Query<PaginationParams>,
+) -> Response {
+    let limit = page.limit.min(200);
     match state.supervisor.list_agents() {
-        Ok(agents) => Ok(Json(json!({ "agents": agents }))),
+        Ok(agents) => {
+            let page_agents: Vec<_> = agents.into_iter().skip(page.offset).take(limit).collect();
+            Json(json!({ "agents": page_agents, "limit": limit, "offset": page.offset })).into_response()
+        }
         Err(e) => {
             tracing::error!(error = %e, "Failed to list agents");
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            api_error(StatusCode::INTERNAL_SERVER_ERROR, "list_agents_failed", "Could not retrieve agents")
         }
     }
 }
@@ -125,17 +156,15 @@ async fn list_agents(State(state): State<Arc<AppState>>) -> Result<Json<Value>, 
 async fn create_agent(
     State(state): State<Arc<AppState>>,
     Json(mut agent): Json<AgentSpec>,
-) -> Result<Json<Value>, StatusCode> {
-    // Ensure ID is generated if empty (though AgentSpec::new does it, JSON might override)
+) -> Response {
     if agent.id.is_nil() {
         agent.id = uuid::Uuid::new_v4();
     }
-    
     match state.supervisor.save_agent(&agent) {
-        Ok(_) => Ok(Json(json!({ "status": "created", "id": agent.id }))),
+        Ok(_) => Json(json!({ "status": "created", "id": agent.id })).into_response(),
         Err(e) => {
             tracing::error!(error = %e, "Failed to create agent");
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            api_error(StatusCode::INTERNAL_SERVER_ERROR, "create_agent_failed", "Could not save agent")
         }
     }
 }
@@ -144,16 +173,16 @@ async fn create_agent(
 async fn run_agent(
     State(state): State<Arc<AppState>>,
     axum::extract::Path(agent_id): axum::extract::Path<uuid::Uuid>,
-) -> Result<Json<Value>, StatusCode> {
-    // 1. Fetch agent spec
-    let agent = state.supervisor.get_agent(&agent_id)
-        .map_err(|e| {
+) -> Response {
+    let agent = match state.supervisor.get_agent(&agent_id) {
+        Ok(Some(a)) => a,
+        Ok(None) => return api_error(StatusCode::NOT_FOUND, "agent_not_found", &format!("Agent {} not found", agent_id)),
+        Err(e) => {
             tracing::error!(error = %e, "Failed to get agent");
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::NOT_FOUND)?;
+            return api_error(StatusCode::INTERNAL_SERVER_ERROR, "get_agent_failed", "Could not retrieve agent");
+        }
+    };
 
-    // 2. Create ScheduleJob
     let run_id = uuid::Uuid::new_v4();
     let msg = CoreMessage::ScheduleJob(JobTrigger {
         run_id,
@@ -161,49 +190,46 @@ async fn run_agent(
         trigger_reason: "Manually triggered via API".to_string(),
     });
 
-    // 3. Send to scheduler
-    state.scheduler_tx.send(msg).await.map_err(|e| {
-        tracing::error!(error = %e, "Failed to send job to scheduler");
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    Ok(Json(json!({
-        "status": "triggered",
-        "run_id": run_id,
-        "agent_id": agent_id
-    })))
+    match state.scheduler_tx.send(msg).await {
+        Ok(_) => Json(json!({ "status": "triggered", "run_id": run_id, "agent_id": agent_id })).into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to send job to scheduler");
+            api_error(StatusCode::INTERNAL_SERVER_ERROR, "schedule_failed", "Could not schedule agent run")
+        }
+    }
 }
 
 /// Cancel a specific run.
 async fn cancel_run(
     State(state): State<Arc<AppState>>,
     axum::extract::Path(run_id): axum::extract::Path<uuid::Uuid>,
-) -> Result<Json<Value>, StatusCode> {
-    let msg = CoreMessage::CancelRun(run_id);
-    
-    state.supervisor_tx.send(msg).await.map_err(|e| {
-         tracing::error!(error = %e, "Failed to send cancel request");
-         StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    Ok(Json(json!({ "status": "cancellation_requested", "run_id": run_id })))
+) -> Response {
+    match state.supervisor_tx.send(CoreMessage::CancelRun(run_id)).await {
+        Ok(_) => Json(json!({ "status": "cancellation_requested", "run_id": run_id })).into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to send cancel request");
+            api_error(StatusCode::INTERNAL_SERVER_ERROR, "cancel_failed", "Could not cancel run")
+        }
+    }
 }
 
 /// Provide input for a run.
 async fn provide_input(
-     State(state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
     axum::extract::Path(run_id): axum::extract::Path<uuid::Uuid>,
     Json(payload): Json<Value>,
-) -> Result<Json<Value>, StatusCode> {
-    let input = payload.get("input").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    let msg = CoreMessage::ProvideInput { run_id, input };
-
-    state.supervisor_tx.send(msg).await.map_err(|e| {
-         tracing::error!(error = %e, "Failed to send input");
-         StatusCode::INTERNAL_SERVER_ERROR
-    })?;
-
-    Ok(Json(json!({ "status": "input_provided", "run_id": run_id })))
+) -> Response {
+    let input = payload.get("input")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    match state.supervisor_tx.send(CoreMessage::ProvideInput { run_id, input }).await {
+        Ok(_) => Json(json!({ "status": "input_provided", "run_id": run_id })).into_response(),
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to send input");
+            api_error(StatusCode::INTERNAL_SERVER_ERROR, "input_failed", "Could not deliver input to run")
+        }
+    }
 }
 
 /// Get runtime status.

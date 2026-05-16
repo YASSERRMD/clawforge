@@ -41,13 +41,16 @@ impl RateLimiter {
         let mut limits = self.limits.write().await;
         let now = Instant::now();
 
+        // Evict stale entries every check to prevent unbounded HashMap growth.
+        limits.retain(|_, (_, window_start)| now.duration_since(*window_start) <= self.window);
+
         let state = limits.entry(ip.to_string()).or_insert((0, now));
 
         if now.duration_since(state.1) > self.window {
-            // Reset window
+            // Reset window for this IP
             state.0 = 1;
             state.1 = now;
-            debug!("Rate limit reset for IP {}", ip);
+            debug!("Rate limit window reset for IP {}", ip);
             true
         } else {
             state.0 += 1;
