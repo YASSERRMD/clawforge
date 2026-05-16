@@ -8,7 +8,7 @@ export function AgentList() {
 
     const fetchAgents = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/agents');
+            const res = await fetch('/api/agents');
             const data = await res.json();
             setAgents(data.agents);
         } catch (error) {
@@ -19,7 +19,7 @@ export function AgentList() {
     const runAgent = async (id: string) => {
         try {
             setLoading(true);
-            const res = await fetch(`http://localhost:3000/api/agents/${id}/run`, {
+            const res = await fetch(`/api/agents/${id}/run`, {
                 method: 'POST'
             });
             if (res.ok) {

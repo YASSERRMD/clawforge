@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-
-interface RunSummary {
-    run_id: string;
-    event_count: number;
-    status: string;
-}
+import type { RunSummary } from '../types';
 
 export function RunList({ onSelectRun }: { onSelectRun: (runId: string) => void }) {
     const [runs, setRuns] = useState<RunSummary[]>([]);
@@ -14,7 +9,7 @@ export function RunList({ onSelectRun }: { onSelectRun: (runId: string) => void 
     const fetchRuns = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:3000/api/runs');
+            const res = await fetch('/api/runs');
             const data = await res.json();
             setRuns(data.runs);
         } catch (error) {

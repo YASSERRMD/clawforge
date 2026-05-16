@@ -4,6 +4,7 @@ import { RunList } from './components/RunList';
 import { AgentList } from './components/AgentList';
 import { RunDetail } from './components/RunDetail';
 import { EventFeed } from './components/EventFeed';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useEventStream } from './useEventStream';
 
 
@@ -49,20 +50,26 @@ function App() {
             </div>
           </div>
 
-          <RunList onSelectRun={handleSelectRun} />
+          <ErrorBoundary label="Run List">
+            <RunList onSelectRun={handleSelectRun} />
+          </ErrorBoundary>
 
-          <AgentList />
+          <ErrorBoundary label="Agent List">
+            <AgentList />
+          </ErrorBoundary>
         </aside>
 
         <section className="flex-1 h-[calc(100vh-6rem)]">
-          {viewMode === 'live' ? (
-            <EventFeed
-              events={liveEvents}
-              title="Live Activity"
-            />
-          ) : (
-            activeRunId && <RunDetail runId={activeRunId} />
-          )}
+          <ErrorBoundary label="Main Panel">
+            {viewMode === 'live' ? (
+              <EventFeed
+                events={liveEvents}
+                title="Live Activity"
+              />
+            ) : (
+              activeRunId && <RunDetail runId={activeRunId} />
+            )}
+          </ErrorBoundary>
         </section>
       </main>
     </div>
