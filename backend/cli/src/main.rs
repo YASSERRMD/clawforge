@@ -71,6 +71,7 @@ enum Commands {
 #[tokio::main]
 async fn main() -> Result<()> {
     let config = Config::from_env();
+    config.validate()?;
 
     // Initialize structured logging
     tracing_subscriber::fmt()

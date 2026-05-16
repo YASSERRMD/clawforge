@@ -1,3 +1,4 @@
+use anyhow::{bail, Result};
 use serde::Deserialize;
 
 /// ClawForge runtime configuration.
@@ -55,6 +56,23 @@ impl Default for Config {
 }
 
 impl Config {
+    /// Validate that configuration values are in acceptable ranges.
+    pub fn validate(&self) -> Result<()> {
+        if self.port == 0 {
+            bail!("CLAWFORGE_PORT must be between 1 and 65535");
+        }
+        if self.db_path.trim().is_empty() {
+            bail!("CLAWFORGE_DB must not be empty");
+        }
+        if !self.bluebubbles_webhook_path.starts_with('/') {
+            bail!("BLUEBUBBLES_WEBHOOK_PATH must start with '/'");
+        }
+        if !self.slack_webhook_path.starts_with('/') {
+            bail!("SLACK_WEBHOOK_PATH must start with '/'");
+        }
+        Ok(())
+    }
+
     /// Load configuration from environment variables with sensible defaults.
     pub fn from_env() -> Self {
         Self {

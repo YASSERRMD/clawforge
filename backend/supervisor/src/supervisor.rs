@@ -67,34 +67,19 @@ impl Supervisor {
         }))
     }
 
-    /// Get recent runs summary for the API.
+    /// Get recent runs summary for the API using SQL aggregation.
     pub fn get_recent_runs(&self, limit: usize) -> Result<Vec<serde_json::Value>> {
-        let events = tokio::task::block_in_place(|| self.event_store.get_recent(limit))?;
-
-        // Group by run_id
-        let mut runs: std::collections::HashMap<String, Vec<&Event>> =
-            std::collections::HashMap::new();
-        for event in &events {
-            runs.entry(event.run_id.to_string())
-                .or_default()
-                .push(event);
-        }
-
-        let summaries = runs
-            .iter()
-            .map(|(run_id, events)| {
-                let status = events
-                    .first()
-                    .map(|e| e.kind.to_string())
-                    .unwrap_or_else(|| "unknown".to_string());
+        let rows = tokio::task::block_in_place(|| self.event_store.get_recent_run_summaries(limit))?;
+        let summaries = rows
+            .into_iter()
+            .map(|(run_id, status, event_count)| {
                 serde_json::json!({
                     "run_id": run_id,
-                    "event_count": events.len(),
+                    "event_count": event_count,
                     "status": status,
                 })
             })
             .collect();
-
         Ok(summaries)
     }
 

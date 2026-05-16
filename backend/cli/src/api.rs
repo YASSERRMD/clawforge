@@ -157,6 +157,17 @@ async fn create_agent(
     State(state): State<Arc<AppState>>,
     Json(mut agent): Json<AgentSpec>,
 ) -> Response {
+    let name = agent.name.trim().to_string();
+    if name.is_empty() {
+        return api_error(StatusCode::BAD_REQUEST, "invalid_name", "Agent name must not be empty");
+    }
+    agent.name = name;
+
+    let max_tokens = agent.llm_policy.max_tokens;
+    if max_tokens == 0 || max_tokens > 32_000 {
+        return api_error(StatusCode::BAD_REQUEST, "invalid_max_tokens", "max_tokens must be between 1 and 32000");
+    }
+
     if agent.id.is_nil() {
         agent.id = uuid::Uuid::new_v4();
     }
@@ -219,10 +230,10 @@ async fn provide_input(
     axum::extract::Path(run_id): axum::extract::Path<uuid::Uuid>,
     Json(payload): Json<Value>,
 ) -> Response {
-    let input = payload.get("input")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
+    let input = match payload.get("input").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+        Some(s) => s.to_string(),
+        None => return api_error(StatusCode::BAD_REQUEST, "empty_input", "input field must be a non-empty string"),
+    };
     match state.supervisor_tx.send(CoreMessage::ProvideInput { run_id, input }).await {
         Ok(_) => Json(json!({ "status": "input_provided", "run_id": run_id })).into_response(),
         Err(e) => {

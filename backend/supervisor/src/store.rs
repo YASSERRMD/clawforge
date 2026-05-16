@@ -47,6 +47,7 @@ impl EventStore {
             CREATE INDEX IF NOT EXISTS idx_events_run_id ON events(run_id);
             CREATE INDEX IF NOT EXISTS idx_events_agent_id ON events(agent_id);
             CREATE INDEX IF NOT EXISTS idx_events_kind ON events(kind);
+            CREATE INDEX IF NOT EXISTS idx_events_run_timestamp ON events(run_id, timestamp);
             CREATE TABLE IF NOT EXISTS agents (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -192,6 +193,31 @@ impl EventStore {
         } else {
             Ok(None)
         }
+    }
+
+    /// Get the most-recent run summaries via SQL aggregation — avoids loading all events.
+    pub fn get_recent_run_summaries(&self, limit: usize) -> Result<Vec<(String, String, i64)>> {
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        let mut stmt = conn.prepare(
+            "SELECT run_id, kind, COUNT(*) as event_count
+             FROM events
+             WHERE (run_id, timestamp) IN (
+                 SELECT run_id, MAX(timestamp) FROM events GROUP BY run_id
+             )
+             GROUP BY run_id
+             ORDER BY MAX(timestamp) DESC
+             LIMIT ?1",
+        )?;
+        let rows = stmt
+            .query_map(params![limit], |row| {
+                let run_id: String = row.get(0)?;
+                let kind: String = row.get(1)?;
+                let count: i64 = row.get(2)?;
+                Ok((run_id, kind, count))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
+        Ok(rows)
     }
 
     /// List all agents.
