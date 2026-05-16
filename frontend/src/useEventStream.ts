@@ -5,14 +5,17 @@ const WS_URL = (import.meta.env.VITE_WS_URL as string | undefined)
     ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/ws`;
 
 const MAX_BACKOFF_MS = 30_000;
+const OFFLINE_THRESHOLD = 5;
 
 export function useEventStream() {
     const [events, setEvents] = useState<Event[]>([]);
     const [isConnected, setIsConnected] = useState(false);
+    const [isOffline, setIsOffline] = useState(false);
     const ws = useRef<WebSocket | null>(null);
     const retryDelay = useRef(1_000);
     const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const destroyed = useRef(false);
+    const consecutiveFailures = useRef(0);
 
     const connect = useCallback(() => {
         if (destroyed.current) return;
@@ -21,8 +24,10 @@ export function useEventStream() {
         ws.current = socket;
 
         socket.onopen = () => {
-            retryDelay.current = 1_000; // reset backoff on successful connect
+            retryDelay.current = 1_000;
+            consecutiveFailures.current = 0;
             setIsConnected(true);
+            setIsOffline(false);
         };
 
         socket.onmessage = (message) => {
@@ -37,7 +42,10 @@ export function useEventStream() {
         socket.onclose = () => {
             setIsConnected(false);
             if (destroyed.current) return;
-            // Exponential backoff reconnect, capped at MAX_BACKOFF_MS
+            consecutiveFailures.current += 1;
+            if (consecutiveFailures.current >= OFFLINE_THRESHOLD) {
+                setIsOffline(true);
+            }
             retryTimer.current = setTimeout(() => {
                 retryDelay.current = Math.min(retryDelay.current * 2, MAX_BACKOFF_MS);
                 connect();
@@ -60,5 +68,5 @@ export function useEventStream() {
         };
     }, [connect]);
 
-    return { events, isConnected };
+    return { events, isConnected, isOffline };
 }

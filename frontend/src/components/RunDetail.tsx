@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Event } from '../types';
 import { EventFeed } from './EventFeed';
-import { XCircle, MessageSquare } from 'lucide-react';
+import { XCircle, MessageSquare, Loader2, AlertCircle } from 'lucide-react';
 import { Canvas } from './Canvas';
 
 interface RunDetailProps {
@@ -13,18 +13,23 @@ export function RunDetail({ runId }: RunDetailProps) {
     const [status, setStatus] = useState<string>('unknown');
     const [inputPrompt, setInputPrompt] = useState<string | null>(null);
     const [inputValue, setInputValue] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [inputLoading, setInputLoading] = useState(false);
+    const [fetchLoading, setFetchLoading] = useState(true);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
     const fetchDetails = async (signal?: AbortSignal) => {
         try {
             const res = await fetch(`/api/runs/${runId}`, { signal });
-            if (!res.ok) return;
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             setEvents(data.events ?? []);
             setStatus(data.status ?? 'unknown');
+            setFetchError(null);
         } catch (e) {
             if (e instanceof DOMException && e.name === 'AbortError') return;
-            console.error('Failed to fetch run details:', e);
+            setFetchError((e as Error).message ?? 'Failed to load run details');
+        } finally {
+            setFetchLoading(false);
         }
     };
 
@@ -40,7 +45,7 @@ export function RunDetail({ runId }: RunDetailProps) {
 
     const submitInput = async () => {
         if (!inputValue) return;
-        setLoading(true);
+        setInputLoading(true);
         try {
             await fetch(`/api/runs/${runId}/input`, {
                 method: 'POST',
@@ -53,11 +58,13 @@ export function RunDetail({ runId }: RunDetailProps) {
         } catch (e) {
             console.error(e);
         } finally {
-            setLoading(false);
+            setInputLoading(false);
         }
     };
 
     useEffect(() => {
+        setFetchLoading(true);
+        setFetchError(null);
         const controller = new AbortController();
         void fetchDetails(controller.signal);
         const interval = setInterval(() => void fetchDetails(controller.signal), 2000);
@@ -106,7 +113,7 @@ export function RunDetail({ runId }: RunDetailProps) {
                         />
                         <button
                             onClick={submitInput}
-                            disabled={loading}
+                            disabled={inputLoading}
                             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                         >
                             Send
@@ -115,14 +122,32 @@ export function RunDetail({ runId }: RunDetailProps) {
                 </div>
             )}
 
-            <div className="flex-1 overflow-auto flex">
-                <div className="w-1/2 p-4 border-r border-gray-200">
-                    <EventFeed events={events} title="" />
+            {fetchLoading && events.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center gap-2 text-gray-400">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Loading run details…</span>
                 </div>
-                <div className="w-1/2 p-4 bg-gray-50">
-                    <Canvas runId={runId} agentId="unknown" />
+            ) : fetchError && events.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-2 text-red-600">
+                    <AlertCircle className="w-6 h-6" />
+                    <span className="text-sm">{fetchError}</span>
+                    <button
+                        onClick={() => fetchDetails()}
+                        className="px-3 py-1 bg-red-50 border border-red-200 rounded hover:bg-red-100 text-sm"
+                    >
+                        Retry
+                    </button>
                 </div>
-            </div>
+            ) : (
+                <div className="flex-1 overflow-auto flex">
+                    <div className="w-1/2 p-4 border-r border-gray-200">
+                        <EventFeed events={events} title="" />
+                    </div>
+                    <div className="w-1/2 p-4 bg-gray-50">
+                        <Canvas runId={runId} agentId="unknown" />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
