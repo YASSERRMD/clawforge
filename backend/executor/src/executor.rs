@@ -148,7 +148,15 @@ impl Executor {
         let response_headers: HashMap<String, String> = response
             .headers()
             .iter()
-            .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
+            .filter_map(|(k, v)| {
+                match v.to_str() {
+                    Ok(s) => Some((k.to_string(), s.to_string())),
+                    Err(_) => {
+                        warn!(header = %k, "Skipping non-UTF8 response header value");
+                        None
+                    }
+                }
+            })
             .collect();
         let body = response.text().await?;
 
