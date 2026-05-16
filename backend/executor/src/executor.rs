@@ -148,7 +148,15 @@ impl Executor {
         let response_headers: HashMap<String, String> = response
             .headers()
             .iter()
-            .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
+            .filter_map(|(k, v)| {
+                match v.to_str() {
+                    Ok(s) => Some((k.to_string(), s.to_string())),
+                    Err(_) => {
+                        warn!(header = %k, "Skipping non-UTF8 response header value");
+                        None
+                    }
+                }
+            })
             .collect();
         let body = response.text().await?;
 
@@ -299,7 +307,7 @@ impl Component for Executor {
 
                     match result {
                         Ok(output) => {
-                            info!(run_id = %run_id, "Action executed successfully");
+                            info!(run_id = %run_id, step = proposal.step_index, "Action executed successfully");
                             self.emit_event(
                                 run_id,
                                 agent_id,
@@ -307,13 +315,8 @@ impl Component for Executor {
                                 output,
                             )
                             .await;
-                            self.emit_event(
-                                run_id,
-                                agent_id,
-                                EventKind::RunCompleted,
-                                serde_json::json!({"completed_at": Utc::now().to_rfc3339()}),
-                            )
-                            .await;
+                            // RunCompleted is emitted by the Supervisor once all steps
+                            // are finished, not here after each individual action.
                         }
                         Err(e) => {
                             error!(run_id = %run_id, error = %e, "Action execution failed");
