@@ -7,10 +7,8 @@ export function useEventStream() {
     const ws = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        // Connect to WebSocket
-        // In dev, Vite proxies /api to backend (we need to configure proxy or use absolute URL)
-        // For now, assume backend on port 3000
-        const wsUrl = 'ws://localhost:3000/api/ws';
+        const wsUrl = import.meta.env.VITE_WS_URL as string | undefined
+            ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/ws`;
         const socket = new WebSocket(wsUrl);
 
         socket.onopen = () => {
@@ -21,7 +19,7 @@ export function useEventStream() {
         socket.onmessage = (message) => {
             try {
                 const event: Event = JSON.parse(message.data);
-                setEvents((prev) => [event, ...prev].slice(0, 100)); // Keep last 100
+                setEvents((prev) => [event, ...prev].slice(0, 500));
             } catch (e) {
                 console.error('Failed to parse event', e);
             }
