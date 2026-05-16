@@ -125,8 +125,9 @@ async fn run_server(config: Config) -> Result<()> {
     let event_store = EventStore::open(&config.db_path)?;
     let supervisor = Arc::new(Supervisor::new(event_store));
 
-    // Initialize broadcast channel for real-time events
-    let (broadcast_tx, _) = broadcast::channel(100);
+    // Initialize broadcast channel for real-time events.
+    // 1024 gives lagging subscribers a reasonable buffer before events are dropped.
+    let (broadcast_tx, _) = broadcast::channel(1024);
     supervisor.set_broadcast_tx(broadcast_tx.clone()).await;
 
     // Initialize channel bus
@@ -237,7 +238,9 @@ async fn run_server(config: Config) -> Result<()> {
         slack_router = Some(sa.build_router());
         let sup_tx = bus.supervisor_tx.clone();
         tokio::spawn(async move {
-            let _ = sa.start(sup_tx).await;
+            if let Err(e) = sa.start(sup_tx).await {
+                error!("Slack adapter failed: {}", e);
+            }
         });
         info!("Registered Slack channel adapter");
     }
