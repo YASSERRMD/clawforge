@@ -1,6 +1,8 @@
 //! Gateway Authentication Module
 //!
-//! Mirrors `src/gateway/auth.ts`. Handles Bearer tokens and device auth.
+//! Validates Bearer tokens against the CLAWFORGE_API_KEY environment variable.
+//! Set CLAWFORGE_API_KEY to a strong random secret before deployment.
+//! If the env var is unset the gateway rejects all authenticated requests.
 
 use axum::{
     async_trait,
@@ -25,6 +27,14 @@ where
     type Rejection = (StatusCode, &'static str);
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let expected = match std::env::var("CLAWFORGE_API_KEY") {
+            Ok(k) if !k.is_empty() => k,
+            _ => {
+                warn!("CLAWFORGE_API_KEY is not set — all authenticated requests will be rejected");
+                return Err((StatusCode::UNAUTHORIZED, "Server not configured for auth"));
+            }
+        };
+
         let auth_header = parts
             .headers
             .get(axum::http::header::AUTHORIZATION)
@@ -33,15 +43,13 @@ where
         match auth_header {
             Some(header) if header.starts_with("Bearer ") => {
                 let token = &header["Bearer ".len()..];
-                
-                // MOCK VALIDATION
-                if token == "valid_token" {
+                if token == expected {
                     Ok(RequireAuth(AuthenticatedUser {
-                        key_id: "mock_key".into(),
+                        key_id: "api_key".into(),
                         roles: vec!["admin".into()],
                     }))
                 } else {
-                    warn!("Invalid Bearer token: {}", token);
+                    warn!("Invalid Bearer token presented");
                     Err((StatusCode::UNAUTHORIZED, "Invalid token"))
                 }
             }

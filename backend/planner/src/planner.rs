@@ -137,19 +137,13 @@ impl LlmPlanner {
                         "Plan generated"
                     );
 
-                    info!(
-                        provider = %response.provider,
-                        total_latency_ms = elapsed.as_millis(),
-                        "Plan generated"
-                    );
-
                     // Simple parser for "Action: ToolName(json_args)"
                     // Example: Action: file_write({"path": "foo.txt", "content": "bar"})
                     if let Some(action_line) = response.content.lines().find(|l| l.starts_with("Action: ")) {
                         let content = action_line.trim_start_matches("Action: ").trim();
                         // simplistic parsing: Name(Args)
                         if let Some(idx) = content.find('(') {
-                             if content.ends_with(')') {
+                             if content.ends_with(')') && idx + 1 < content.len() {
                                  let tool_name = &content[..idx];
                                  let args_str = &content[idx+1..content.len()-1];
                                  
