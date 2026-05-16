@@ -15,24 +15,16 @@ export function RunDetail({ runId }: RunDetailProps) {
     const [inputValue, setInputValue] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const fetchDetails = async () => {
+    const fetchDetails = async (signal?: AbortSignal) => {
         try {
-            const res = await fetch(`/api/runs/${runId}`);
-            if (res.ok) {
-                const data = await res.json();
-                setEvents(data.events || []);
-                setStatus(data.status);
-
-                // Check for awaiting input
-                // Currently data.status is just the last event kind. 
-                // We need the *actual* run state from Supervisor.
-                // HACK: For now, if last event is "RequestInput", we assume awaiting input.
-                // Ideally API should return top-level state.
-
-                // TODO: Update backend to return true state
-            }
+            const res = await fetch(`/api/runs/${runId}`, { signal });
+            if (!res.ok) return;
+            const data = await res.json();
+            setEvents(data.events ?? []);
+            setStatus(data.status ?? 'unknown');
         } catch (e) {
-            console.error(e);
+            if (e instanceof DOMException && e.name === 'AbortError') return;
+            console.error('Failed to fetch run details:', e);
         }
     };
 
@@ -40,7 +32,7 @@ export function RunDetail({ runId }: RunDetailProps) {
         if (!confirm('Stop this run?')) return;
         try {
             await fetch(`/api/runs/${runId}/cancel`, { method: 'POST' });
-            fetchDetails();
+            void fetchDetails();
         } catch (e) {
             console.error(e);
         }
@@ -66,10 +58,14 @@ export function RunDetail({ runId }: RunDetailProps) {
     };
 
     useEffect(() => {
-        // Poll for updates in history view (live view handled by App.tsx)
-        fetchDetails();
-        const interval = setInterval(fetchDetails, 2000);
-        return () => clearInterval(interval);
+        const controller = new AbortController();
+        void fetchDetails(controller.signal);
+        const interval = setInterval(() => void fetchDetails(controller.signal), 2000);
+        return () => {
+            controller.abort();
+            clearInterval(interval);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [runId]);
 
     return (
