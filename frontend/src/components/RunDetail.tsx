@@ -17,7 +17,7 @@ export function RunDetail({ runId }: RunDetailProps) {
 
     const fetchDetails = async () => {
         try {
-            const res = await fetch(`http://localhost:3000/api/runs/${runId}`);
+            const res = await fetch(`/api/runs/${runId}`);
             if (res.ok) {
                 const data = await res.json();
                 setEvents(data.events || []);
@@ -39,7 +39,7 @@ export function RunDetail({ runId }: RunDetailProps) {
     const cancelRun = async () => {
         if (!confirm('Stop this run?')) return;
         try {
-            await fetch(`http://localhost:3000/api/runs/${runId}/cancel`, { method: 'POST' });
+            await fetch(`/api/runs/${runId}/cancel`, { method: 'POST' });
             fetchDetails();
         } catch (e) {
             console.error(e);
@@ -50,7 +50,7 @@ export function RunDetail({ runId }: RunDetailProps) {
         if (!inputValue) return;
         setLoading(true);
         try {
-            await fetch(`http://localhost:3000/api/runs/${runId}/input`, {
+            await fetch(`/api/runs/${runId}/input`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ input: inputValue })
