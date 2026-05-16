@@ -77,7 +77,9 @@ pub struct Capabilities {
     pub can_write_files: bool,
     pub can_execute_commands: bool,
     pub can_make_http_requests: bool,
+    pub can_use_tools: bool,
     pub allowed_domains: Vec<String>,
+    pub allowed_tools: Vec<String>, // empty = all registered tools; non-empty = allowlist
     pub max_tokens_per_run: Option<u64>,
     pub max_cost_per_run_usd: Option<f64>,
 }
