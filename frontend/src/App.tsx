@@ -51,7 +51,7 @@ function App() {
           </div>
 
           <ErrorBoundary label="Run List">
-            <RunList onSelectRun={handleSelectRun} />
+            <RunList onSelectRun={handleSelectRun} liveEvents={liveEvents} />
           </ErrorBoundary>
 
           <ErrorBoundary label="Agent List">
