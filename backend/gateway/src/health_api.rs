@@ -19,14 +19,11 @@ pub struct GlobalHealthReport {
 
 /// Handler for `GET /api/health`
 pub async fn get_health(State(state): State<GatewayState>) -> Json<GlobalHealthReport> {
-    
-    // Combine gateway status with channel status
     let channels = state.health_monitor.get_report().await;
-    
-    // If any channel is offline, we might report global as degraded, but let's just return OK for the gateway process itself.
+    let degraded = channels.iter().any(|c| c.status != "healthy");
     Json(GlobalHealthReport {
-        status: "ok".into(),
-        uptime_seconds: 1337, // MOCK: implement real uptime tracker
+        status: if degraded { "degraded" } else { "ok" }.into(),
+        uptime_seconds: state.started_at.elapsed().as_secs(),
         channels,
         timestamp: Utc::now(),
     })
