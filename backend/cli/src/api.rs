@@ -1,12 +1,23 @@
 use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc};
 use axum::{
-    extract::{State, ws::{WebSocketUpgrade, WebSocket, Message}},
+    extract::{State, Query, ws::{WebSocketUpgrade, WebSocket, Message}},
     http::StatusCode,
     response::{Json, IntoResponse, Response},
     routing::get,
     Router,
 };
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct PaginationParams {
+    #[serde(default = "default_limit")]
+    limit: usize,
+    #[serde(default)]
+    offset: usize,
+}
+
+fn default_limit() -> usize { 20 }
 use serde_json::{json, Value};
 use tokio_stream::wrappers::BroadcastStream;
 use futures::{sink::SinkExt, stream::StreamExt};
@@ -91,10 +102,17 @@ async fn health() -> Json<Value> {
     }))
 }
 
-/// Get recent runs.
-async fn get_runs(State(state): State<Arc<AppState>>) -> Response {
-    match state.supervisor.get_recent_runs(50) {
-        Ok(runs) => Json(json!({ "runs": runs })).into_response(),
+/// Get recent runs with optional pagination (?limit=20&offset=0).
+async fn get_runs(
+    State(state): State<Arc<AppState>>,
+    Query(page): Query<PaginationParams>,
+) -> Response {
+    let limit = page.limit.min(200);
+    match state.supervisor.get_recent_runs(page.offset + limit) {
+        Ok(mut runs) => {
+            runs = runs.into_iter().skip(page.offset).take(limit).collect();
+            Json(json!({ "runs": runs, "limit": limit, "offset": page.offset })).into_response()
+        }
         Err(e) => {
             tracing::error!(error = %e, "Failed to fetch runs");
             api_error(StatusCode::INTERNAL_SERVER_ERROR, "fetch_runs_failed", "Could not retrieve runs")
@@ -116,10 +134,17 @@ async fn get_run_details(
     }
 }
 
-/// List all registered agents.
-async fn list_agents(State(state): State<Arc<AppState>>) -> Response {
+/// List registered agents with optional pagination (?limit=20&offset=0).
+async fn list_agents(
+    State(state): State<Arc<AppState>>,
+    Query(page): Query<PaginationParams>,
+) -> Response {
+    let limit = page.limit.min(200);
     match state.supervisor.list_agents() {
-        Ok(agents) => Json(json!({ "agents": agents })).into_response(),
+        Ok(agents) => {
+            let page_agents: Vec<_> = agents.into_iter().skip(page.offset).take(limit).collect();
+            Json(json!({ "agents": page_agents, "limit": limit, "offset": page.offset })).into_response()
+        }
         Err(e) => {
             tracing::error!(error = %e, "Failed to list agents");
             api_error(StatusCode::INTERNAL_SERVER_ERROR, "list_agents_failed", "Could not retrieve agents")
