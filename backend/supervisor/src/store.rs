@@ -195,8 +195,8 @@ impl EventStore {
         }
     }
 
-    /// Get the most-recent run summaries via SQL aggregation — avoids loading all events.
-    pub fn get_recent_run_summaries(&self, limit: usize) -> Result<Vec<(String, String, i64)>> {
+    /// Get the most-recent run summaries via SQL aggregation with LIMIT/OFFSET.
+    pub fn get_recent_run_summaries(&self, limit: usize, offset: usize) -> Result<Vec<(String, String, i64)>> {
         let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
         let mut stmt = conn.prepare(
             "SELECT run_id, kind, COUNT(*) as event_count
@@ -206,10 +206,10 @@ impl EventStore {
              )
              GROUP BY run_id
              ORDER BY MAX(timestamp) DESC
-             LIMIT ?1",
+             LIMIT ?1 OFFSET ?2",
         )?;
         let rows = stmt
-            .query_map(params![limit], |row| {
+            .query_map(params![limit, offset], |row| {
                 let run_id: String = row.get(0)?;
                 let kind: String = row.get(1)?;
                 let count: i64 = row.get(2)?;
@@ -220,11 +220,10 @@ impl EventStore {
         Ok(rows)
     }
 
-    /// List all agents.
+    /// List all agents (full list, used internally).
     pub fn list_agents(&self) -> Result<Vec<AgentSpec>> {
         let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
         let mut stmt = conn.prepare("SELECT spec FROM agents ORDER BY name ASC")?;
-        
         let agents = stmt
             .query_map([], |row| {
                 let spec_json: String = row.get(0)?;
@@ -233,7 +232,23 @@ impl EventStore {
             .filter_map(|r| r.ok())
             .filter_map(|json| serde_json::from_str(&json).ok())
             .collect();
-            
+        Ok(agents)
+    }
+
+    /// List agents with SQL-level LIMIT/OFFSET — avoids loading the full table.
+    pub fn list_agents_page(&self, limit: usize, offset: usize) -> Result<Vec<AgentSpec>> {
+        let conn = self.conn.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        let mut stmt = conn.prepare(
+            "SELECT spec FROM agents ORDER BY name ASC LIMIT ?1 OFFSET ?2",
+        )?;
+        let agents = stmt
+            .query_map(params![limit, offset], |row| {
+                let spec_json: String = row.get(0)?;
+                Ok(spec_json)
+            })?
+            .filter_map(|r| r.ok())
+            .filter_map(|json| serde_json::from_str(&json).ok())
+            .collect();
         Ok(agents)
     }
 }

@@ -108,9 +108,8 @@ async fn get_runs(
     Query(page): Query<PaginationParams>,
 ) -> Response {
     let limit = page.limit.min(200);
-    match state.supervisor.get_recent_runs(page.offset + limit) {
-        Ok(mut runs) => {
-            runs = runs.into_iter().skip(page.offset).take(limit).collect();
+    match state.supervisor.get_recent_runs(limit, page.offset) {
+        Ok(runs) => {
             Json(json!({ "runs": runs, "limit": limit, "offset": page.offset })).into_response()
         }
         Err(e) => {
@@ -140,10 +139,9 @@ async fn list_agents(
     Query(page): Query<PaginationParams>,
 ) -> Response {
     let limit = page.limit.min(200);
-    match state.supervisor.list_agents() {
+    match state.supervisor.list_agents_page(limit, page.offset) {
         Ok(agents) => {
-            let page_agents: Vec<_> = agents.into_iter().skip(page.offset).take(limit).collect();
-            Json(json!({ "agents": page_agents, "limit": limit, "offset": page.offset })).into_response()
+            Json(json!({ "agents": agents, "limit": limit, "offset": page.offset })).into_response()
         }
         Err(e) => {
             tracing::error!(error = %e, "Failed to list agents");
@@ -160,6 +158,9 @@ async fn create_agent(
     let name = agent.name.trim().to_string();
     if name.is_empty() {
         return api_error(StatusCode::BAD_REQUEST, "invalid_name", "Agent name must not be empty");
+    }
+    if name.len() > 256 {
+        return api_error(StatusCode::BAD_REQUEST, "invalid_name", "Agent name must not exceed 256 characters");
     }
     agent.name = name;
 
