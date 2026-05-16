@@ -314,6 +314,7 @@ impl LlmPlanner {
                     agent_id,
                     step_index: 0,
                     action,
+                    capabilities: request.agent.capabilities.clone(),
                 });
 
                 if let Err(e) = self.executor_tx.send(proposal).await {

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::event::Event;
-use crate::types::AgentSpec;
+use crate::types::{AgentSpec, Capabilities};
 
 /// Messages exchanged between components via the ClawBus.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,6 +57,8 @@ pub struct ActionProposal {
     pub agent_id: Uuid,
     pub step_index: usize,
     pub action: ProposedAction,
+    /// Agent's declared capabilities — the executor enforces these; never trusts defaults.
+    pub capabilities: Capabilities,
 }
 
 /// The specific action to execute.
