@@ -10,7 +10,7 @@ use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
 use clawforge_core::{
-    AuditEventPayload, Capabilities, ClawError, Component, Event, EventKind,
+    AuditEventPayload, ClawError, Component, Event, EventKind,
     Message, ProposedAction,
     tools::ToolRegistry,
 };
@@ -225,25 +225,9 @@ impl Component for Executor {
                         "Executing action"
                     );
 
-                    // TODO: Check RunState from Supervisor before executing?
-                    // For now, we proceed. In a real implementation, we would 
-                    // check if run_state == Cancelled.
-                    
-                    // Permissive defaults until agent registry lookup is wired (Phase 2).
-                    let capabilities = Capabilities {
-                        can_read_files: true,
-                        can_write_files: true,
-                        can_execute_commands: true,
-                        can_make_http_requests: true,
-                        can_use_tools: true,
-                        allowed_domains: vec![],
-                        allowed_tools: vec![],
-                        max_tokens_per_run: None,
-                        max_cost_per_run_usd: None,
-                    };
-
-                    // Capability check
-                    match Self::check_capability(&capabilities, &proposal.action) {
+                    // Capability check against the agent's declared spec — enforced here,
+                    // not assumed. Defaults (Capabilities::default) are all-false (deny).
+                    match Self::check_capability(&proposal.capabilities, &proposal.action) {
                         Ok(()) => {
                             self.emit_event(
                                 run_id,
