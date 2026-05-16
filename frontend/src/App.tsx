@@ -9,7 +9,7 @@ import { useEventStream } from './useEventStream';
 
 
 function App() {
-  const { events: liveEvents, isConnected } = useEventStream();
+  const { events: liveEvents, isConnected, isOffline } = useEventStream();
   const [viewMode, setViewMode] = useState<'live' | 'history'>('live');
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
 
@@ -29,7 +29,7 @@ function App() {
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
             <span className="text-sm text-gray-500 font-medium">
-              {isConnected ? 'Connected' : 'Disconnected'}
+              {isConnected ? 'Connected' : isOffline ? 'Offline' : 'Reconnecting…'}
             </span>
           </div>
         </div>
@@ -51,7 +51,7 @@ function App() {
           </div>
 
           <ErrorBoundary label="Run List">
-            <RunList onSelectRun={handleSelectRun} />
+            <RunList onSelectRun={handleSelectRun} liveEvents={liveEvents} />
           </ErrorBoundary>
 
           <ErrorBoundary label="Agent List">
