@@ -50,14 +50,20 @@ RUN apt-get update && apt-get install -y ca-certificates libssl1.1 && rm -rf /va
 # Copy binary from builder
 COPY --from=builder /app/target/release/clawforge /usr/local/bin/clawforge
 
-# Create data directory
-RUN mkdir -p /data
+# Create a non-root user and group
+RUN groupadd -r clawforge && useradd -r -g clawforge -s /sbin/nologin clawforge
+
+# Create data directory owned by the runtime user
+RUN mkdir -p /data && chown clawforge:clawforge /data
 
 # Set environment variables
 ENV CLAWFORGE_BIND_ADDRESS=0.0.0.0
 ENV CLAWFORGE_PORT=3000
 ENV CLAWFORGE_DB_PATH=/data/clawforge.db
 ENV RUST_LOG=info
+
+# Drop to non-root before running
+USER clawforge
 
 # Expose port
 EXPOSE 3000
