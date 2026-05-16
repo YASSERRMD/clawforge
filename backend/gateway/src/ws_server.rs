@@ -30,8 +30,15 @@ async fn handle_connection(socket: WebSocket, state: GatewayState) {
     // Forward from bounded app sender to actual websocket
     let mut send_task = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
-            let json = serde_json::to_string(&msg).unwrap();
-            if sender.send(Message::Text(json)).await.is_err() {
+            let json = match serde_json::to_string(&msg) {
+                Ok(j) => j,
+                Err(e) => {
+                    error!(error = %e, "Failed to serialize WebSocket message; closing connection");
+                    break;
+                }
+            };
+            if sender.send(Message::Text(json.into())).await.is_err() {
+                debug!("WebSocket send failed — client disconnected");
                 break;
             }
         }
@@ -73,19 +80,19 @@ async fn handle_incoming_message(
 ) {
     match msg {
         WsMessage::Ping => {
-            let _ = reply_tx.send(WsMessage::Pong);
+            if reply_tx.send(WsMessage::Pong).is_err() {
+                warn!("Failed to send Pong — receiver dropped");
+            }
         }
         WsMessage::Invoke { session_id, agent_id, content } => {
-            info!("Received Invoke for session {} (agent {})", session_id, agent_id);
-            // In a real implementation:
-            // 1. state.registry.register(session_id.clone(), reply_tx.clone()).await;
-            // 2. Dispatch to AgentRunner via channels or queue.
-            
-            // Mock immediate response:
-            let _ = reply_tx.send(WsMessage::Result {
+            info!(session_id = %session_id, agent_id = %agent_id, "Received Invoke");
+            // TODO: dispatch to AgentRunner via bus
+            if reply_tx.send(WsMessage::Result {
                 session_id,
                 content: format!("Echoing: {}", content),
-            });
+            }).is_err() {
+                warn!("Failed to send Result — receiver dropped");
+            }
         }
         _ => warn!("Received unexpected message type from client"),
     }
