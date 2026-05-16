@@ -37,12 +37,31 @@ impl SessionRegistry {
     }
 
     /// Send a message to a specific session.
+    /// Returns false and removes the session if the channel is closed (client disconnected).
     pub async fn send_to(&self, session_id: &SessionId, msg: WsMessage) -> bool {
         let r = self.sessions.read().await;
         if let Some(sender) = r.get(session_id) {
-            sender.send(msg).is_ok()
+            if sender.send(msg).is_ok() {
+                return true;
+            }
         } else {
-            false
+            return false;
         }
+        // Channel was closed — upgrade to write lock and remove the dead session.
+        drop(r);
+        let mut w = self.sessions.write().await;
+        w.remove(session_id);
+        false
+    }
+
+    /// Remove all sessions whose send channels have been closed.
+    pub async fn prune_dead_sessions(&self) {
+        let mut w = self.sessions.write().await;
+        w.retain(|_, sender| !sender.is_closed());
+    }
+
+    /// Current number of active sessions.
+    pub async fn session_count(&self) -> usize {
+        self.sessions.read().await.len()
     }
 }
