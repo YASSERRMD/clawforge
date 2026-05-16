@@ -67,9 +67,9 @@ impl Supervisor {
         }))
     }
 
-    /// Get recent runs summary for the API using SQL aggregation.
-    pub fn get_recent_runs(&self, limit: usize) -> Result<Vec<serde_json::Value>> {
-        let rows = tokio::task::block_in_place(|| self.event_store.get_recent_run_summaries(limit))?;
+    /// Get recent runs summary for the API using SQL aggregation with LIMIT/OFFSET.
+    pub fn get_recent_runs(&self, limit: usize, offset: usize) -> Result<Vec<serde_json::Value>> {
+        let rows = tokio::task::block_in_place(|| self.event_store.get_recent_run_summaries(limit, offset))?;
         let summaries = rows
             .into_iter()
             .map(|(run_id, status, event_count)| {
@@ -93,9 +93,14 @@ impl Supervisor {
         tokio::task::block_in_place(|| self.event_store.get_agent(id))
     }
 
-    /// List all agents.
+    /// List all agents (full table).
     pub fn list_agents(&self) -> Result<Vec<AgentSpec>> {
         tokio::task::block_in_place(|| self.event_store.list_agents())
+    }
+
+    /// List agents with SQL-level pagination.
+    pub fn list_agents_page(&self, limit: usize, offset: usize) -> Result<Vec<AgentSpec>> {
+        tokio::task::block_in_place(|| self.event_store.list_agents_page(limit, offset))
     }
 }
 

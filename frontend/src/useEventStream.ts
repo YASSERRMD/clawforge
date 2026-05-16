@@ -4,6 +4,19 @@ import type { Event } from './types';
 const WS_URL = (import.meta.env.VITE_WS_URL as string | undefined)
     ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/ws`;
 
+function isEvent(value: unknown): value is Event {
+    if (typeof value !== 'object' || value === null) return false;
+    const v = value as Record<string, unknown>;
+    return (
+        typeof v['id'] === 'string' &&
+        typeof v['run_id'] === 'string' &&
+        typeof v['agent_id'] === 'string' &&
+        typeof v['timestamp'] === 'string' &&
+        typeof v['kind'] === 'string' &&
+        typeof v['payload'] === 'object' && v['payload'] !== null
+    );
+}
+
 const MAX_BACKOFF_MS = 30_000;
 const OFFLINE_THRESHOLD = 5;
 
@@ -32,10 +45,14 @@ export function useEventStream() {
 
         socket.onmessage = (message) => {
             try {
-                const event: Event = JSON.parse(message.data as string);
-                setEvents((prev) => [event, ...prev].slice(0, 500));
+                const parsed: unknown = JSON.parse(message.data as string);
+                if (!isEvent(parsed)) {
+                    console.warn('Received unexpected WebSocket message shape', parsed);
+                    return;
+                }
+                setEvents((prev) => [parsed, ...prev].slice(0, 500));
             } catch (e) {
-                console.error('Failed to parse event', e);
+                console.error('Failed to parse WebSocket message', e);
             }
         };
 
