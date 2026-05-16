@@ -17,5 +17,5 @@ pub mod session_registry;
 pub mod ws_protocol;
 pub mod ws_server;
 
-pub use config_reload::ConfigReloader;
+pub use config_reload::{ConfigReloader, GatewayConfig};
 pub use server::{start_server, GatewayState};

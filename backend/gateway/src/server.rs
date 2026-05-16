@@ -9,8 +9,11 @@ use axum::{
 };
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
+use tokio::sync::mpsc;
 use tower_http::cors::CorsLayer;
 use tracing::{info, instrument};
+
+use clawforge_core::Message as CoreMessage;
 
 use crate::control_ui;
 use crate::openai_compat;
@@ -30,6 +33,8 @@ pub struct GatewayState {
     pub rate_limiter: RateLimiter,
     pub health_monitor: HealthMonitor,
     pub started_at: std::time::Instant,
+    /// Channel to the scheduler — None when the gateway runs standalone.
+    pub scheduler_tx: Option<mpsc::Sender<CoreMessage>>,
 }
 
 /// Starts the main Axum HTTP server for the gateway.

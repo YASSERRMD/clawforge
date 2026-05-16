@@ -11,6 +11,9 @@ use axum::{
 };
 use tracing::{debug, error, info, warn};
 
+use clawforge_core::{Message as CoreMessage, message::JobTrigger};
+use uuid::Uuid;
+
 use crate::server::GatewayState;
 use crate::ws_protocol::WsMessage;
 use tokio::sync::mpsc;
@@ -85,13 +88,54 @@ async fn handle_incoming_message(
             }
         }
         WsMessage::Invoke { session_id, agent_id, content } => {
-            info!(session_id = %session_id, agent_id = %agent_id, "Received Invoke");
-            // TODO: dispatch to AgentRunner via bus
-            if reply_tx.send(WsMessage::Result {
-                session_id,
-                content: format!("Echoing: {}", content),
-            }).is_err() {
-                warn!("Failed to send Result — receiver dropped");
+            info!(session_id = %session_id, agent_id = %agent_id, "Received Invoke — dispatching to scheduler");
+            let parsed_agent_id = match Uuid::parse_str(&agent_id) {
+                Ok(id) => id,
+                Err(_) => {
+                    if reply_tx.send(WsMessage::Error {
+                        session_id: Some(session_id),
+                        error_code: "invalid_agent_id".to_string(),
+                        message: format!("agent_id '{}' is not a valid UUID", agent_id),
+                    }).is_err() {
+                        warn!("Failed to send Error — receiver dropped");
+                    }
+                    return;
+                }
+            };
+            match &state.scheduler_tx {
+                Some(tx) => {
+                    let run_id = Uuid::new_v4();
+                    let trigger = JobTrigger {
+                        run_id,
+                        agent_id: parsed_agent_id,
+                        trigger_reason: format!("WebSocket Invoke from session {}: {}", session_id, content),
+                    };
+                    if let Err(e) = tx.send(CoreMessage::ScheduleJob(trigger)).await {
+                        error!(error = %e, "Failed to dispatch Invoke to scheduler");
+                        if reply_tx.send(WsMessage::Error {
+                            session_id: Some(session_id),
+                            error_code: "scheduler_unavailable".to_string(),
+                            message: "Scheduler is not reachable".to_string(),
+                        }).is_err() {
+                            warn!("Failed to send Error — receiver dropped");
+                        }
+                    } else if reply_tx.send(WsMessage::StateChange {
+                        session_id,
+                        state: format!("scheduled:{}", run_id),
+                    }).is_err() {
+                        warn!("Failed to send StateChange — receiver dropped");
+                    }
+                }
+                None => {
+                    warn!(agent_id = %agent_id, "No scheduler connected — Invoke ignored");
+                    if reply_tx.send(WsMessage::Error {
+                        session_id: Some(session_id),
+                        error_code: "scheduler_unavailable".to_string(),
+                        message: "No scheduler is connected to this gateway".to_string(),
+                    }).is_err() {
+                        warn!("Failed to send Error — receiver dropped");
+                    }
+                }
             }
         }
         _ => warn!("Received unexpected message type from client"),
