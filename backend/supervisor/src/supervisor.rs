@@ -49,7 +49,7 @@ impl Supervisor {
 
     /// Get summarized run info from stored events.
     pub fn get_run_summary(&self, run_id: &uuid::Uuid) -> Result<serde_json::Value> {
-        let events = self.event_store.get_run_events(run_id)?;
+        let events = tokio::task::block_in_place(|| self.event_store.get_run_events(run_id))?;
         let status = events
             .last()
             .map(|e| e.kind.to_string())
@@ -69,7 +69,7 @@ impl Supervisor {
 
     /// Get recent runs summary for the API.
     pub fn get_recent_runs(&self, limit: usize) -> Result<Vec<serde_json::Value>> {
-        let events = self.event_store.get_recent(limit)?;
+        let events = tokio::task::block_in_place(|| self.event_store.get_recent(limit))?;
 
         // Group by run_id
         let mut runs: std::collections::HashMap<String, Vec<&Event>> =
@@ -100,17 +100,17 @@ impl Supervisor {
 
     /// Save an agent spec.
     pub fn save_agent(&self, agent: &AgentSpec) -> Result<()> {
-        self.event_store.save_agent(agent)
+        tokio::task::block_in_place(|| self.event_store.save_agent(agent))
     }
 
     /// Get an agent by ID.
     pub fn get_agent(&self, id: &uuid::Uuid) -> Result<Option<AgentSpec>> {
-        self.event_store.get_agent(id)
+        tokio::task::block_in_place(|| self.event_store.get_agent(id))
     }
 
     /// List all agents.
     pub fn list_agents(&self) -> Result<Vec<AgentSpec>> {
-        self.event_store.list_agents()
+        tokio::task::block_in_place(|| self.event_store.list_agents())
     }
 }
 
@@ -153,8 +153,10 @@ impl Component for Supervisor {
                         "Recording audit event"
                     );
 
-                    // Persist the event
-                    if let Err(e) = self.event_store.insert(event) {
+                    // Persist the event via block_in_place so the Tokio thread pool
+                    // isn't starved by the synchronous SQLite write.
+                    let insert_result = tokio::task::block_in_place(|| self.event_store.insert(event));
+                    if let Err(e) = insert_result {
                         error!(error = %e, "Failed to persist event");
                     } else {
                         // Broadcast event to subscribers (e.g. WebSocket)
