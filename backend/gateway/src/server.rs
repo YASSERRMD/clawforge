@@ -9,6 +9,7 @@ use axum::{
 };
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
+use tower_http::cors::CorsLayer;
 use tracing::{info, instrument};
 
 use crate::control_ui;
@@ -28,6 +29,7 @@ pub struct GatewayState {
     pub session_registry: SessionRegistry,
     pub rate_limiter: RateLimiter,
     pub health_monitor: HealthMonitor,
+    pub started_at: std::time::Instant,
 }
 
 /// Starts the main Axum HTTP server for the gateway.
@@ -45,7 +47,8 @@ pub async fn start_server(addr: SocketAddr, state: GatewayState) -> Result<()> {
         .route("/ws", get(ws_server::ws_handler))
         // Control UI Static Files
         .nest("/ui", control_ui::ui_router())
-        .with_state(state);
+        .with_state(state)
+        .layer(CorsLayer::permissive());
 
     info!("Gateway HTTP server listening on {}", addr);
     let listener = TcpListener::bind(&addr).await?;
