@@ -21,7 +21,9 @@ impl IdentityManager {
     pub async fn load_or_generate() -> Result<DeviceIdentity> {
         info!("Loading local device identity keystore...");
         
-        let path = dirs::home_dir().unwrap().join(".clawforge/identity.json");
+        let home = dirs::home_dir()
+            .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?;
+        let path = home.join(".clawforge/identity.json");
         if path.exists() {
             info!("Found existing device identity at {:?}", path);
             Ok(DeviceIdentity {
