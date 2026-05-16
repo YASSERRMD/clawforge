@@ -67,9 +67,20 @@ impl Executor {
             ProposedAction::LlmResponse { .. } => {
                 // LLM responses are always allowed (they're data, not side-effects)
             }
-            ProposedAction::ToolCall { .. } => {
-                // For now, treat tools as always allowed if capabilities check passed upstream
-                // In future, check specific tool permissions here
+            ProposedAction::ToolCall { name, .. } => {
+                if !capabilities.can_use_tools {
+                    return Err(ClawError::CapabilityDenied(
+                        "tool execution not allowed".to_string(),
+                    ));
+                }
+                if !capabilities.allowed_tools.is_empty()
+                    && !capabilities.allowed_tools.iter().any(|t| t == name)
+                {
+                    return Err(ClawError::CapabilityDenied(format!(
+                        "tool '{}' not in allowed list",
+                        name
+                    )));
+                }
             }
         }
         Ok(())
@@ -210,14 +221,15 @@ impl Component for Executor {
                     // For now, we proceed. In a real implementation, we would 
                     // check if run_state == Cancelled.
                     
-                    // For capability checking we need the agent spec — for now use permissive defaults.
-                    // In Phase 2 this will be looked up from the agent registry.
+                    // Permissive defaults until agent registry lookup is wired (Phase 2).
                     let capabilities = Capabilities {
                         can_read_files: true,
                         can_write_files: true,
                         can_execute_commands: true,
                         can_make_http_requests: true,
+                        can_use_tools: true,
                         allowed_domains: vec![],
+                        allowed_tools: vec![],
                         max_tokens_per_run: None,
                         max_cost_per_run_usd: None,
                     };
