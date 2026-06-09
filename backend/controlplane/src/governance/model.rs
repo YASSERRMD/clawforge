@@ -93,6 +93,19 @@ pub struct ApprovalRequest {
     pub decided_at: Option<i64>,
 }
 
+/// An append-only change-history entry for an approval request — the audit
+/// trail of who did what, when, and why.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApprovalEvent {
+    pub id: String,
+    pub request_id: String,
+    /// `submitted` | `approved` | `rejected`.
+    pub action: String,
+    pub actor: String,
+    pub reason: Option<String>,
+    pub at: i64,
+}
+
 impl ApprovalRequest {
     /// Build a fresh `Pending` request from a [`NewApprovalRequest`] input.
     pub fn from_new(input: NewApprovalRequest, id: String, now: i64) -> Self {

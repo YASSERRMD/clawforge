@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::error::{ControlPlaneError, Result};
 
-use super::model::{ApprovalRequest, ApprovalStatus, NewApprovalRequest};
+use super::model::{ApprovalEvent, ApprovalRequest, ApprovalStatus, NewApprovalRequest};
 
 /// Approval workflow engine.
 pub struct GovernanceEngine {
@@ -120,7 +120,51 @@ impl GovernanceEngine {
             ],
         )?;
         cp_info!("governance.submit", request_id = %req.id, kind = ?req.kind);
+        drop(conn);
+        self.record_event(&req.id, "submitted", &req.requested_by, Some(&req.justification))?;
         Ok(req)
+    }
+
+    /// Append a change-history (audit) event for a request.
+    fn record_event(&self, request_id: &str, action: &str, actor: &str, reason: Option<&str>) -> Result<()> {
+        let conn = self.conn.lock().expect("governance mutex poisoned");
+        conn.execute(
+            "INSERT INTO approval_events (id, request_id, action, actor, reason, at)
+             VALUES (?1,?2,?3,?4,?5,?6)",
+            params![
+                Uuid::new_v4().to_string(),
+                request_id,
+                action,
+                actor,
+                reason,
+                Utc::now().timestamp(),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Full change history for a request, oldest first.
+    pub fn history(&self, request_id: &str) -> Result<Vec<ApprovalEvent>> {
+        let conn = self.conn.lock().expect("governance mutex poisoned");
+        let mut stmt = conn.prepare(
+            "SELECT id, request_id, action, actor, reason, at
+             FROM approval_events WHERE request_id = ?1 ORDER BY at ASC",
+        )?;
+        let rows = stmt.query_map(params![request_id], |row| {
+            Ok(ApprovalEvent {
+                id: row.get(0)?,
+                request_id: row.get(1)?,
+                action: row.get(2)?,
+                actor: row.get(3)?,
+                reason: row.get(4)?,
+                at: row.get(5)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
     }
 
     /// Approve a pending request, recording who decided and why.
@@ -152,6 +196,12 @@ impl GovernanceEngine {
                 params![id, serde_json::to_string(&status)?, decided_by, reason, now],
             )?;
         }
+        let action = match status {
+            ApprovalStatus::Approved => "approved",
+            ApprovalStatus::Rejected => "rejected",
+            ApprovalStatus::Pending => "pending",
+        };
+        self.record_event(id, action, decided_by, Some(reason))?;
         cp_info!("governance.decide", request_id = %id, status = ?status, actor = %decided_by);
         self.get(id)
     }
