@@ -254,4 +254,46 @@ mod tests {
         assert!(reg.approve(&i.id).unwrap().is_usable());
         assert!(!reg.block(&i.id).unwrap().is_usable());
     }
+
+    #[test]
+    fn register_rejects_empty_name() {
+        let reg = IntegrationRegistry::in_memory().unwrap();
+        let mut bad = input();
+        bad.name = "  ".into();
+        assert!(reg.register(bad).is_err());
+    }
+
+    #[test]
+    fn risk_escalates_for_elevated_permissions() {
+        use crate::integrations::placeholders;
+        let reg = IntegrationRegistry::in_memory().unwrap();
+        // A webhook is Medium by default, but Write permission floors it at High.
+        let i = reg
+            .register(placeholders::webhook("alerts", "ops", "IT", "https://hooks.internal/x"))
+            .unwrap();
+        assert_eq!(i.risk_level, RiskLevel::High);
+        assert!(i.has_elevated_permission());
+    }
+
+    #[test]
+    fn sso_placeholder_is_critical() {
+        use crate::integrations::placeholders;
+        let reg = IntegrationRegistry::in_memory().unwrap();
+        let i = reg
+            .register(placeholders::sso("corp-sso", "iam", "IT", "https://idp/realm", CredentialRef::vault("kv/sso")))
+            .unwrap();
+        assert_eq!(i.risk_level, RiskLevel::Critical);
+        assert!(i.credential.is_present());
+    }
+
+    #[test]
+    fn audit_log_tracks_lifecycle() {
+        let reg = IntegrationRegistry::in_memory().unwrap();
+        let i = reg.register(input()).unwrap();
+        reg.approve(&i.id).unwrap();
+        reg.block(&i.id).unwrap();
+        let log = reg.audit_log(&i.id).unwrap();
+        let actions: Vec<&str> = log.iter().map(|e| e.action.as_str()).collect();
+        assert_eq!(actions, vec!["registered", "approved", "blocked"]);
+    }
 }
