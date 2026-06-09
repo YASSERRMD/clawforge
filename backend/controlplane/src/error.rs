@@ -40,7 +40,10 @@ pub enum ControlPlaneError {
 impl ControlPlaneError {
     /// Build a [`ControlPlaneError::NotFound`] for the given entity and id.
     pub fn not_found(entity: &'static str, id: impl Into<String>) -> Self {
-        ControlPlaneError::NotFound { entity, id: id.into() }
+        ControlPlaneError::NotFound {
+            entity,
+            id: id.into(),
+        }
     }
 
     /// Build a validation error.

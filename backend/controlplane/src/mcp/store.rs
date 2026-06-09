@@ -67,8 +67,9 @@ fn row_to_server(row: &rusqlite::Row) -> rusqlite::Result<McpServer> {
 }
 
 fn de<T: serde::de::DeserializeOwned>(s: &str, col: usize) -> rusqlite::Result<T> {
-    serde_json::from_str(s)
-        .map_err(|e| rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e)))
+    serde_json::from_str(s).map_err(|e| {
+        rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e))
+    })
 }
 
 impl McpRegistry {
@@ -76,23 +77,31 @@ impl McpRegistry {
     pub fn open(path: &str) -> Result<Self> {
         let conn = Connection::open(path)?;
         conn.execute_batch(&format!("PRAGMA journal_mode=WAL;{SCHEMA}"))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Open an ephemeral in-memory registry (used by tests).
     pub fn in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
         conn.execute_batch(SCHEMA)?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Register a new MCP server; it starts in `PendingApproval`.
     pub fn register(&self, input: NewMcpServer) -> Result<McpServer> {
         if input.name.trim().is_empty() {
-            return Err(ControlPlaneError::validation("MCP server name must not be empty"));
+            return Err(ControlPlaneError::validation(
+                "MCP server name must not be empty",
+            ));
         }
         if input.endpoint.trim().is_empty() {
-            return Err(ControlPlaneError::validation("MCP server endpoint must not be empty"));
+            return Err(ControlPlaneError::validation(
+                "MCP server endpoint must not be empty",
+            ));
         }
         let server = McpServer::from_new(input);
         self.upsert(&server)?;
@@ -103,7 +112,9 @@ impl McpRegistry {
     /// List all registered MCP servers, newest first.
     pub fn list(&self) -> Result<Vec<McpServer>> {
         let conn = self.conn.lock().expect("mcp mutex poisoned");
-        let mut stmt = conn.prepare(&format!("SELECT {COLUMNS} FROM mcp_servers ORDER BY created_at DESC"))?;
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {COLUMNS} FROM mcp_servers ORDER BY created_at DESC"
+        ))?;
         let rows = stmt.query_map([], row_to_server)?;
         let mut out = Vec::new();
         for r in rows {
@@ -236,7 +247,10 @@ mod tests {
     #[test]
     fn get_missing_is_not_found() {
         let reg = McpRegistry::in_memory().unwrap();
-        assert!(matches!(reg.get("nope"), Err(ControlPlaneError::NotFound { .. })));
+        assert!(matches!(
+            reg.get("nope"),
+            Err(ControlPlaneError::NotFound { .. })
+        ));
     }
 
     use crate::constants::RiskLevel;
@@ -250,8 +264,16 @@ mod tests {
             endpoint: "https://mcp.internal/records".into(),
             transport: TransportType::Http,
             tools_exposed: vec![
-                McpTool { name: "lookup".into(), description: "read records".into(), permissions: vec!["read".into()] },
-                McpTool { name: "write".into(), description: "update records".into(), permissions: vec!["write".into(), "pii".into()] },
+                McpTool {
+                    name: "lookup".into(),
+                    description: "read records".into(),
+                    permissions: vec!["read".into()],
+                },
+                McpTool {
+                    name: "write".into(),
+                    description: "update records".into(),
+                    permissions: vec!["write".into(), "pii".into()],
+                },
             ],
             permissions_required: vec!["read".into(), "write".into()],
             risk_level: RiskLevel::High,
@@ -292,8 +314,16 @@ mod tests {
         reg.register(input()).unwrap();
         reg.approve(&a.id).unwrap();
         assert_eq!(reg.list().unwrap().len(), 2);
-        assert_eq!(reg.list_by_status(LifecycleStatus::Active).unwrap().len(), 1);
-        assert_eq!(reg.list_by_status(LifecycleStatus::PendingApproval).unwrap().len(), 1);
+        assert_eq!(
+            reg.list_by_status(LifecycleStatus::Active).unwrap().len(),
+            1
+        );
+        assert_eq!(
+            reg.list_by_status(LifecycleStatus::PendingApproval)
+                .unwrap()
+                .len(),
+            1
+        );
     }
 
     #[test]

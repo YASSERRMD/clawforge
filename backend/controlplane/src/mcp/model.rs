@@ -133,7 +133,10 @@ impl McpServer {
 
     /// Number of exposed tools that request a sensitive permission scope.
     pub fn sensitive_tool_count(&self) -> usize {
-        self.tools_exposed.iter().filter(|t| t.is_sensitive()).count()
+        self.tools_exposed
+            .iter()
+            .filter(|t| t.is_sensitive())
+            .count()
     }
 
     /// Names of all exposed tools.

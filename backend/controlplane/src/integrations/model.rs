@@ -70,17 +70,29 @@ pub struct CredentialRef {
 impl CredentialRef {
     /// A reference into a secrets vault.
     pub fn vault(path: impl Into<String>) -> Self {
-        CredentialRef { store: "vault".into(), key: path.into(), description: String::new() }
+        CredentialRef {
+            store: "vault".into(),
+            key: path.into(),
+            description: String::new(),
+        }
     }
 
     /// A reference to an environment variable.
     pub fn env(var: impl Into<String>) -> Self {
-        CredentialRef { store: "env".into(), key: var.into(), description: String::new() }
+        CredentialRef {
+            store: "env".into(),
+            key: var.into(),
+            description: String::new(),
+        }
     }
 
     /// A placeholder for integrations that need no stored credential.
     pub fn none() -> Self {
-        CredentialRef { store: "none".into(), key: String::new(), description: String::new() }
+        CredentialRef {
+            store: "none".into(),
+            key: String::new(),
+            description: String::new(),
+        }
     }
 
     /// Whether this reference actually points at a secret store.
@@ -111,7 +123,9 @@ impl IntegrationPermission {
     pub fn is_elevated(&self) -> bool {
         matches!(
             self,
-            IntegrationPermission::Write | IntegrationPermission::Delete | IntegrationPermission::Admin
+            IntegrationPermission::Write
+                | IntegrationPermission::Delete
+                | IntegrationPermission::Admin
         )
     }
 }

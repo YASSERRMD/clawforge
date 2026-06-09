@@ -3,7 +3,9 @@
 use crate::constants::{DataAccessLevel, RiskLevel};
 use crate::error::Result;
 
-use super::model::{AgentTemplate, ComplianceBadge, MarketplaceAgent, NewListing, VerificationBadge};
+use super::model::{
+    AgentTemplate, ComplianceBadge, MarketplaceAgent, NewListing, VerificationBadge,
+};
 use super::store::Marketplace;
 
 /// The built-in catalogue of example listings.

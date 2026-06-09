@@ -47,7 +47,11 @@ impl SecurityDecision {
     /// One-line, human-readable verdict suitable for logs and API responses.
     pub fn summary(&self) -> String {
         if self.allowed {
-            format!("ALLOW (risk: {}, score: {})", self.risk_band(), self.risk_score)
+            format!(
+                "ALLOW (risk: {}, score: {})",
+                self.risk_band(),
+                self.risk_score
+            )
         } else {
             format!(
                 "DENY (risk: {}, score: {}) — {}",

@@ -33,7 +33,13 @@ pub fn database(
 }
 
 /// Placeholder for a GIS integration (ArcGIS and similar spatial services).
-pub fn gis(name: &str, owner: &str, department: &str, endpoint: &str, credential: CredentialRef) -> NewIntegration {
+pub fn gis(
+    name: &str,
+    owner: &str,
+    department: &str,
+    endpoint: &str,
+    credential: CredentialRef,
+) -> NewIntegration {
     NewIntegration {
         name: name.into(),
         kind: IntegrationKind::ArcGis,
@@ -49,7 +55,13 @@ pub fn gis(name: &str, owner: &str, department: &str, endpoint: &str, credential
 
 /// Placeholder for an SSO / identity-provider integration (OIDC/SAML, AD).
 /// Identity integrations are high risk by default.
-pub fn sso(name: &str, owner: &str, department: &str, endpoint: &str, credential: CredentialRef) -> NewIntegration {
+pub fn sso(
+    name: &str,
+    owner: &str,
+    department: &str,
+    endpoint: &str,
+    credential: CredentialRef,
+) -> NewIntegration {
     NewIntegration {
         name: name.into(),
         kind: IntegrationKind::Sso,
@@ -64,7 +76,13 @@ pub fn sso(name: &str, owner: &str, department: &str, endpoint: &str, credential
 }
 
 /// Placeholder for an email-sending integration (SMTP / provider API).
-pub fn email(name: &str, owner: &str, department: &str, endpoint: &str, credential: CredentialRef) -> NewIntegration {
+pub fn email(
+    name: &str,
+    owner: &str,
+    department: &str,
+    endpoint: &str,
+    credential: CredentialRef,
+) -> NewIntegration {
     NewIntegration {
         name: name.into(),
         kind: IntegrationKind::Email,

@@ -35,9 +35,22 @@ fn main() -> anyhow::Result<()> {
     // 1. Marketplace → install a verified template into the registry.
     let listings = clawforge_controlplane::marketplace::seed::seed(&marketplace)?;
     let listing = &listings[0];
-    println!("1. Marketplace listing '{}' trusted={}", listing.name, listing.is_trusted());
-    let agent = marketplace.install(&listing.id, &registry, "Permit Bot A", "team-a", "Licensing")?;
-    println!("   installed agent {} (status {:?})", agent.name, agent.status);
+    println!(
+        "1. Marketplace listing '{}' trusted={}",
+        listing.name,
+        listing.is_trusted()
+    );
+    let agent = marketplace.install(
+        &listing.id,
+        &registry,
+        "Permit Bot A",
+        "team-a",
+        "Licensing",
+    )?;
+    println!(
+        "   installed agent {} (status {:?})",
+        agent.name, agent.status
+    );
 
     // 2. MCP governance → register + approve the server the agent needs.
     let server = mcp.register(NewMcpServer {
@@ -83,7 +96,12 @@ fn main() -> anyhow::Result<()> {
     println!("4. Gateway decision: {}", decision.summary());
 
     // 5. Observability → record the execution.
-    obs.log_event(NewExecutionEvent::task(&agent.id, decision.allowed, 120, 0.02))?;
+    obs.log_event(NewExecutionEvent::task(
+        &agent.id,
+        decision.allowed,
+        120,
+        0.02,
+    ))?;
     let metrics = obs.summary(Some(&agent.id))?;
     println!(
         "5. Observability: {} task(s), success rate {:.0}%",

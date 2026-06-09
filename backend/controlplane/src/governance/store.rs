@@ -70,8 +70,9 @@ fn row_to_request(row: &rusqlite::Row) -> rusqlite::Result<ApprovalRequest> {
 }
 
 fn de<T: serde::de::DeserializeOwned>(s: &str, col: usize) -> rusqlite::Result<T> {
-    serde_json::from_str(s)
-        .map_err(|e| rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e)))
+    serde_json::from_str(s).map_err(|e| {
+        rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e))
+    })
 }
 
 impl GovernanceEngine {
@@ -79,20 +80,26 @@ impl GovernanceEngine {
     pub fn open(path: &str) -> Result<Self> {
         let conn = Connection::open(path)?;
         conn.execute_batch(&format!("PRAGMA journal_mode=WAL;{SCHEMA}"))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Open an ephemeral in-memory engine (used by tests).
     pub fn in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
         conn.execute_batch(SCHEMA)?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Submit a new approval request; it starts in `Pending`.
     pub fn submit(&self, input: NewApprovalRequest) -> Result<ApprovalRequest> {
         if input.justification.trim().is_empty() {
-            return Err(ControlPlaneError::validation("justification must not be empty"));
+            return Err(ControlPlaneError::validation(
+                "justification must not be empty",
+            ));
         }
         let now = Utc::now().timestamp();
         let req = ApprovalRequest::from_new(input, Uuid::new_v4().to_string(), now);
@@ -121,12 +128,23 @@ impl GovernanceEngine {
         )?;
         cp_info!("governance.submit", request_id = %req.id, kind = ?req.kind);
         drop(conn);
-        self.record_event(&req.id, "submitted", &req.requested_by, Some(&req.justification))?;
+        self.record_event(
+            &req.id,
+            "submitted",
+            &req.requested_by,
+            Some(&req.justification),
+        )?;
         Ok(req)
     }
 
     /// Append a change-history (audit) event for a request.
-    fn record_event(&self, request_id: &str, action: &str, actor: &str, reason: Option<&str>) -> Result<()> {
+    fn record_event(
+        &self,
+        request_id: &str,
+        action: &str,
+        actor: &str,
+        reason: Option<&str>,
+    ) -> Result<()> {
         let conn = self.conn.lock().expect("governance mutex poisoned");
         conn.execute(
             "INSERT INTO approval_events (id, request_id, action, actor, reason, at)
@@ -178,10 +196,18 @@ impl GovernanceEngine {
     }
 
     /// Apply a terminal decision to a pending request (internal helper).
-    fn decide(&self, id: &str, status: ApprovalStatus, decided_by: &str, reason: &str) -> Result<ApprovalRequest> {
+    fn decide(
+        &self,
+        id: &str,
+        status: ApprovalStatus,
+        decided_by: &str,
+        reason: &str,
+    ) -> Result<ApprovalRequest> {
         // Every decision must carry a policy reason for the audit trail.
         if reason.trim().is_empty() {
-            return Err(ControlPlaneError::validation("a decision reason is required"));
+            return Err(ControlPlaneError::validation(
+                "a decision reason is required",
+            ));
         }
         let current = self.get(id)?;
         if current.status.is_decided() {
@@ -212,7 +238,10 @@ impl GovernanceEngine {
 
     /// List all approval requests, newest first.
     pub fn list(&self) -> Result<Vec<ApprovalRequest>> {
-        self.query_requests(&format!("SELECT {COLUMNS} FROM approval_requests ORDER BY created_at DESC"), [])
+        self.query_requests(
+            &format!("SELECT {COLUMNS} FROM approval_requests ORDER BY created_at DESC"),
+            [],
+        )
     }
 
     /// List approval requests with a given status (e.g. all `Pending`).
@@ -232,7 +261,11 @@ impl GovernanceEngine {
     }
 
     /// Run a SELECT returning approval requests (internal helper).
-    fn query_requests<P: rusqlite::Params>(&self, sql: &str, params: P) -> Result<Vec<ApprovalRequest>> {
+    fn query_requests<P: rusqlite::Params>(
+        &self,
+        sql: &str,
+        params: P,
+    ) -> Result<Vec<ApprovalRequest>> {
         let conn = self.conn.lock().expect("governance mutex poisoned");
         let mut stmt = conn.prepare(sql)?;
         let rows = stmt.query_map(params, row_to_request)?;
@@ -252,7 +285,9 @@ impl GovernanceEngine {
             row_to_request,
         )
         .map_err(|e| match e {
-            rusqlite::Error::QueryReturnedNoRows => ControlPlaneError::not_found("approval_request", id),
+            rusqlite::Error::QueryReturnedNoRows => {
+                ControlPlaneError::not_found("approval_request", id)
+            }
             other => other.into(),
         })
     }
@@ -308,7 +343,9 @@ mod tests {
     fn reject_sets_rejected_status() {
         let eng = GovernanceEngine::in_memory().unwrap();
         let r = eng.submit(req()).unwrap();
-        let rejected = eng.reject(&r.id, "ciso", "insufficient justification").unwrap();
+        let rejected = eng
+            .reject(&r.id, "ciso", "insufficient justification")
+            .unwrap();
         assert_eq!(rejected.status, ApprovalStatus::Rejected);
     }
 
@@ -349,8 +386,14 @@ mod tests {
         eng.approve(&a.id, "ciso", "ok").unwrap();
 
         assert_eq!(eng.list().unwrap().len(), 2);
-        assert_eq!(eng.list_by_status(ApprovalStatus::Pending).unwrap().len(), 1);
-        assert_eq!(eng.list_by_status(ApprovalStatus::Approved).unwrap().len(), 1);
+        assert_eq!(
+            eng.list_by_status(ApprovalStatus::Pending).unwrap().len(),
+            1
+        );
+        assert_eq!(
+            eng.list_by_status(ApprovalStatus::Approved).unwrap().len(),
+            1
+        );
         assert_eq!(eng.list_by_owner("other-team").unwrap().len(), 1);
     }
 }

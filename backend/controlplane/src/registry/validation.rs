@@ -26,7 +26,8 @@ pub fn validate_new_agent(input: &NewAgent) -> Result<()> {
 
     // A restricted-data agent that is only low risk is almost always a
     // mis-classification; force an explicit higher risk level.
-    if input.data_access_level == DataAccessLevel::Restricted && input.risk_level == RiskLevel::Low {
+    if input.data_access_level == DataAccessLevel::Restricted && input.risk_level == RiskLevel::Low
+    {
         return Err(ControlPlaneError::validation(
             "agents with restricted data access must be at least medium risk",
         ));
@@ -43,7 +44,9 @@ pub fn validate_record(record: &AgentRecord) -> Result<()> {
     bound_len("name", &record.name)?;
     bound_len("owner", &record.owner)?;
     bound_len("department", &record.department)?;
-    if record.data_access_level == DataAccessLevel::Restricted && record.risk_level == RiskLevel::Low {
+    if record.data_access_level == DataAccessLevel::Restricted
+        && record.risk_level == RiskLevel::Low
+    {
         return Err(ControlPlaneError::validation(
             "agents with restricted data access must be at least medium risk",
         ));
@@ -53,7 +56,9 @@ pub fn validate_record(record: &AgentRecord) -> Result<()> {
 
 fn require_non_empty(field: &'static str, value: &str) -> Result<()> {
     if value.trim().is_empty() {
-        return Err(ControlPlaneError::validation(format!("{field} must not be empty")));
+        return Err(ControlPlaneError::validation(format!(
+            "{field} must not be empty"
+        )));
     }
     Ok(())
 }

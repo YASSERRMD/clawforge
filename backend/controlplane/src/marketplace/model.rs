@@ -92,7 +92,10 @@ impl MarketplaceAgent {
     /// option: verified and at least compliance-reviewed.
     pub fn is_trusted(&self) -> bool {
         self.verification == VerificationBadge::Verified
-            && matches!(self.compliance, ComplianceBadge::Compliant | ComplianceBadge::Certified)
+            && matches!(
+                self.compliance,
+                ComplianceBadge::Compliant | ComplianceBadge::Certified
+            )
     }
 }
 

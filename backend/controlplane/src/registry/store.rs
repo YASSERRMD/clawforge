@@ -75,8 +75,9 @@ fn row_to_record(row: &rusqlite::Row) -> rusqlite::Result<AgentRecord> {
 /// Deserialize a JSON-encoded column value, surfacing parse errors as SQLite
 /// conversion failures so they propagate through `query_map`.
 fn de<T: serde::de::DeserializeOwned>(s: &str, col: usize) -> rusqlite::Result<T> {
-    serde_json::from_str(s)
-        .map_err(|e| rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e)))
+    serde_json::from_str(s).map_err(|e| {
+        rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e))
+    })
 }
 
 impl AgentRegistry {
@@ -84,14 +85,18 @@ impl AgentRegistry {
     pub fn open(path: &str) -> Result<Self> {
         let conn = Connection::open(path)?;
         conn.execute_batch(&format!("PRAGMA journal_mode=WAL;{SCHEMA}"))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Open an ephemeral in-memory registry (used by tests).
     pub fn in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
         conn.execute_batch(SCHEMA)?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Validate and register a new agent, returning the materialised record.
@@ -131,7 +136,9 @@ impl AgentRegistry {
     /// List all registered agents, newest first.
     pub fn list(&self) -> Result<Vec<AgentRecord>> {
         let conn = self.conn.lock().expect("registry mutex poisoned");
-        let mut stmt = conn.prepare(&format!("SELECT {COLUMNS} FROM agents ORDER BY created_at DESC"))?;
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {COLUMNS} FROM agents ORDER BY created_at DESC"
+        ))?;
         let rows = stmt.query_map([], row_to_record)?;
         let mut out = Vec::new();
         for row in rows {
@@ -322,10 +329,15 @@ mod tests {
         let reg = AgentRegistry::in_memory().unwrap();
         let created = reg.create(input()).unwrap();
         // Draft -> Active is not allowed (must pass approval).
-        assert!(reg.set_status(&created.id, LifecycleStatus::Active).is_err());
+        assert!(reg
+            .set_status(&created.id, LifecycleStatus::Active)
+            .is_err());
         // Draft -> PendingApproval -> Active is allowed.
-        reg.set_status(&created.id, LifecycleStatus::PendingApproval).unwrap();
-        let active = reg.set_status(&created.id, LifecycleStatus::Active).unwrap();
+        reg.set_status(&created.id, LifecycleStatus::PendingApproval)
+            .unwrap();
+        let active = reg
+            .set_status(&created.id, LifecycleStatus::Active)
+            .unwrap();
         assert!(active.is_operational());
     }
 }

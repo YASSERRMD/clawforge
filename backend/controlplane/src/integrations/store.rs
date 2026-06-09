@@ -69,8 +69,9 @@ fn row_to_integration(row: &rusqlite::Row) -> rusqlite::Result<IntegrationProvid
 }
 
 fn de<T: serde::de::DeserializeOwned>(s: &str, col: usize) -> rusqlite::Result<T> {
-    serde_json::from_str(s)
-        .map_err(|e| rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e)))
+    serde_json::from_str(s).map_err(|e| {
+        rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e))
+    })
 }
 
 impl IntegrationRegistry {
@@ -78,20 +79,26 @@ impl IntegrationRegistry {
     pub fn open(path: &str) -> Result<Self> {
         let conn = Connection::open(path)?;
         conn.execute_batch(&format!("PRAGMA journal_mode=WAL;{SCHEMA}"))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Open an ephemeral in-memory registry (used by tests).
     pub fn in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
         conn.execute_batch(SCHEMA)?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Register a new integration; it starts in `PendingApproval`.
     pub fn register(&self, input: NewIntegration) -> Result<IntegrationProvider> {
         if input.name.trim().is_empty() {
-            return Err(ControlPlaneError::validation("integration name must not be empty"));
+            return Err(ControlPlaneError::validation(
+                "integration name must not be empty",
+            ));
         }
         let mut integration = IntegrationProvider::from_new(input);
         // Escalate risk to at least the classified baseline for the kind and
@@ -111,7 +118,12 @@ impl IntegrationRegistry {
         let conn = self.conn.lock().expect("integration mutex poisoned");
         conn.execute(
             "INSERT INTO integration_audit (id, integration_id, action, at) VALUES (?1,?2,?3,?4)",
-            params![Uuid::new_v4().to_string(), integration_id, action, Utc::now().timestamp()],
+            params![
+                Uuid::new_v4().to_string(),
+                integration_id,
+                action,
+                Utc::now().timestamp()
+            ],
         )?;
         Ok(())
     }
@@ -141,7 +153,9 @@ impl IntegrationRegistry {
     /// List all integrations, newest first.
     pub fn list(&self) -> Result<Vec<IntegrationProvider>> {
         let conn = self.conn.lock().expect("integration mutex poisoned");
-        let mut stmt = conn.prepare(&format!("SELECT {COLUMNS} FROM integrations ORDER BY created_at DESC"))?;
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {COLUMNS} FROM integrations ORDER BY created_at DESC"
+        ))?;
         let rows = stmt.query_map([], row_to_integration)?;
         let mut out = Vec::new();
         for r in rows {
@@ -269,7 +283,12 @@ mod tests {
         let reg = IntegrationRegistry::in_memory().unwrap();
         // A webhook is Medium by default, but Write permission floors it at High.
         let i = reg
-            .register(placeholders::webhook("alerts", "ops", "IT", "https://hooks.internal/x"))
+            .register(placeholders::webhook(
+                "alerts",
+                "ops",
+                "IT",
+                "https://hooks.internal/x",
+            ))
             .unwrap();
         assert_eq!(i.risk_level, RiskLevel::High);
         assert!(i.has_elevated_permission());
@@ -280,7 +299,13 @@ mod tests {
         use crate::integrations::placeholders;
         let reg = IntegrationRegistry::in_memory().unwrap();
         let i = reg
-            .register(placeholders::sso("corp-sso", "iam", "IT", "https://idp/realm", CredentialRef::vault("kv/sso")))
+            .register(placeholders::sso(
+                "corp-sso",
+                "iam",
+                "IT",
+                "https://idp/realm",
+                CredentialRef::vault("kv/sso"),
+            ))
             .unwrap();
         assert_eq!(i.risk_level, RiskLevel::Critical);
         assert!(i.credential.is_present());

@@ -181,7 +181,9 @@ impl CompliancePolicy {
     /// Indefinite retention (`0`) and active investigation holds are never past
     /// due (a legal hold overrides routine deletion).
     pub fn is_past_retention(&self, age_days: u32) -> bool {
-        !self.investigation_mode && self.data_retention_days != 0 && age_days > self.data_retention_days
+        !self.investigation_mode
+            && self.data_retention_days != 0
+            && age_days > self.data_retention_days
     }
 
     /// A baseline UAE PDPL policy for a subject.
