@@ -37,7 +37,7 @@ Deactivated  (terminal; reachable from any non-deactivated state)
 ```
 
 New agents start in `Draft`. They can only reach `Active` by passing through
-`PendingApproval` — the registry rejects a direct `Draft → Active` jump so an
+`PendingApproval` - the registry rejects a direct `Draft → Active` jump so an
 agent cannot become operational without governance approval. `Blocked` and
 `Deactivated` are available as administrative overrides from any live state.
 Transition rules live in `registry::lifecycle::can_transition`.

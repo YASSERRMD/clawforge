@@ -1,4 +1,4 @@
-# Use Case — Government Municipality
+# Use Case - Government Municipality
 
 **Scenario:** A municipality wants an AI agent to triage building-permit
 applications. The agent must read resident records (regulated PII) and is
@@ -56,4 +56,4 @@ let dept = DepartmentComplianceSummary::summarize("Licensing", &[report]);
 
 The municipality can now demonstrate, with reproducible evidence, *who approved
 the agent, what it accessed, and that retention and export rules were enforced*
-— the core of a PDPL accountability story.
+- the core of a PDPL accountability story.

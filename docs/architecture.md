@@ -4,9 +4,9 @@
 
 ClawForge has two layers:
 
-1. **Agent runtime** — the existing Rust workspace that *runs* agents (gateway,
+1. **Agent runtime** - the existing Rust workspace that *runs* agents (gateway,
    planner, executor, channels, tools, memory, …).
-2. **Control plane** — the `clawforge-controlplane` crate that *governs* agents
+2. **Control plane** - the `clawforge-controlplane` crate that *governs* agents
    (registry, governance, observability, security gateway, MCP governance,
    marketplace, integrations, compliance).
 
@@ -60,14 +60,14 @@ backend/controlplane/
     ├── constants.rs    # RiskLevel, DataAccessLevel, LifecycleStatus, product consts
     ├── error.rs        # ControlPlaneError + Result alias
     ├── logging.rs      # cp_info! / cp_warn! / cp_blocked! macros
-    ├── registry/       # Phase 2 — Agent Registry
-    ├── governance.rs   # Phase 3 — Governance Engine
-    ├── observability/  # Phase 4 — metrics & execution events
-    ├── gateway.rs      # Phase 5 — Security Gateway
-    ├── mcp/            # Phase 6 — MCP registry & governance
-    ├── marketplace.rs  # Phase 7 — verified agent templates
-    ├── integrations/   # Phase 8 — enterprise integration registry
-    └── compliance/     # Phase 9 — government compliance pack
+    ├── registry/       # Phase 2 - Agent Registry
+    ├── governance.rs   # Phase 3 - Governance Engine
+    ├── observability/  # Phase 4 - metrics & execution events
+    ├── gateway.rs      # Phase 5 - Security Gateway
+    ├── mcp/            # Phase 6 - MCP registry & governance
+    ├── marketplace.rs  # Phase 7 - verified agent templates
+    ├── integrations/   # Phase 8 - enterprise integration registry
+    └── compliance/     # Phase 9 - government compliance pack
 ```
 
 (Modules land phase by phase; the table reflects the target shape.)

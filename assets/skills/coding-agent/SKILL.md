@@ -271,7 +271,7 @@ bash pty:true workdir:~/project background:true command:"codex --yolo exec 'Buil
 When completely finished, run: openclaw system event --text \"Done: Built todos REST API with CRUD endpoints\" --mode now'"
 ```
 
-This triggers an immediate wake event — Skippy gets pinged in seconds, not 10 minutes.
+This triggers an immediate wake event - Skippy gets pinged in seconds, not 10 minutes.
 
 ---
 

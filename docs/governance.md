@@ -70,7 +70,7 @@ let history = gov.history(&req.id)?;
 
 ## How it ties together
 
-The engine deliberately does not mutate the Agent Registry itself — it records
+The engine deliberately does not mutate the Agent Registry itself - it records
 *decisions*. The intended flow is: register an agent (`Draft`), submit it for
 approval, and on `Approved` move it through `PendingApproval → Active` in the
 registry. This keeps the source-of-truth (registry) and the decision log

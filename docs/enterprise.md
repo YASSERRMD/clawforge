@@ -1,4 +1,4 @@
-# Use Case — Enterprise IT
+# Use Case - Enterprise IT
 
 **Scenario:** An enterprise IT operations team wants an agent that executes
 approved remediation runbooks (restart services, run diagnostics) against
@@ -22,7 +22,7 @@ governance.submit(/* kind: Tool, shell */)?;
 ```
 
 The `servicenow-mcp` server is registered in **MCP Governance**, reviewed
-(`requires_governance_review()` is true — it has a `write` tool), approved, and
+(`requires_governance_review()` is true - it has a `write` tool), approved, and
 health-checked.
 
 ## 3. Policy & budget
@@ -35,19 +35,18 @@ caps daily spend.
 ## 4. Guarded execution
 
 Before each remediation step the Security Gateway verifies the tool and MCP
-server are allow-listed, the model matches, the action is within budget, and —
-because the agent is critical-risk under a mandated gate — flags it for human
+server are allow-listed, the model matches, the action is within budget, and - because the agent is critical-risk under a mandated gate - flags it for human
 approval. Allowed steps proceed; everything is scored and logged.
 
 ## 5. Observe the fleet
 
 Every run emits Observability events. The IT dashboard shows task success rate,
 tool failure rate, average latency, total cost, MCP call volume, and any blocked
-executions — for this agent and across the whole fleet (`summary(None)`).
+executions - for this agent and across the whole fleet (`summary(None)`).
 
 ## Why a control plane
 
 Without ClawForge this agent would run with ad-hoc credentials, no central
 approval, no per-action checks, and no unified audit trail. With it, IT gets
 **Kubernetes-style lifecycle, ServiceNow-style approvals, and Splunk-style
-observability** over their agent fleet — in one place.
+observability** over their agent fleet - in one place.

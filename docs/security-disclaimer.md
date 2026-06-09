@@ -9,7 +9,7 @@ compliant. Read this before relying on it.
 The underlying runtime connects to real messaging surfaces (WhatsApp, Telegram,
 Discord, Slack, …). Inbound messages, tool outputs, and MCP responses are
 **untrusted input** and may attempt prompt injection. The Security Gateway gates
-*capabilities* (which tool/MCP/model/data an action may use) — it does not, on
+*capabilities* (which tool/MCP/model/data an action may use) - it does not, on
 its own, sanitise content. Keep untrusted execution sandboxed (the runtime
 supports Docker isolation).
 
@@ -17,7 +17,7 @@ supports Docker isolation).
 
 - It enforces the policies **you configure**. A permissive `SecurityPolicy`
   permits permissive behaviour.
-- Approval actions currently trust the supplied actor identity — **add
+- Approval actions currently trust the supplied actor identity - **add
   authentication/RBAC** (SSO/AD) before production. See [limitations](limitations.md).
 - Digital signatures over audit evidence are a **placeholder**; do not treat
   unsigned evidence as cryptographically attested.

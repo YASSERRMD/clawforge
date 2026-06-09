@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/banner.png" alt="ClawForge — Enterprise & Government AI Agent Control Plane" width="100%">
+  <img src="docs/assets/banner.png" alt="ClawForge - Enterprise & Government AI Agent Control Plane" width="100%">
 </p>
 
 <h1 align="center">ClawForge</h1>
@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <em>Kubernetes&nbsp;·&nbsp;ServiceNow&nbsp;·&nbsp;Splunk&nbsp;—&nbsp;for AI Agents.</em>
+  <em>Kubernetes&nbsp;·&nbsp;ServiceNow&nbsp;·&nbsp;Splunk&nbsp;-&nbsp;for AI Agents.</em>
 </p>
 
 ---
@@ -25,7 +25,7 @@
 
 **ClawForge is not another agent framework.** It is the **control plane** for
 managing, governing, securing, observing, auditing, and operating AI agents, MCP
-servers, workflows, tools, models, and enterprise integrations — built for
+servers, workflows, tools, models, and enterprise integrations - built for
 government entities, municipalities, and enterprise IT, security, and AI platform
 teams.
 
@@ -37,7 +37,7 @@ teams.
 | **ClawForge** | **Enterprise / Government Agent Control Plane** |
 
 Beneath the control plane sits a high-performance, local-first **agent runtime**
-written entirely in Rust — a Rust implementation of the
+written entirely in Rust - a Rust implementation of the
 [OpenClaw](https://openclaw.ai) topology that orchestrates autonomous agents over
 a central WebSocket gateway, across channels (WhatsApp, Telegram, Discord, Slack),
 with tools, sandboxing, and memory. The `clawforge-controlplane` crate wraps that
@@ -73,7 +73,7 @@ domain module:
 | **Security Gateway** | Pre-execution checks on every action (tool / MCP / model / data / budget / approval) + risk score | [security-gateway.md](docs/security-gateway.md) |
 | **MCP Governance** | Registry, approval, health, and usage tracking for MCP servers | [mcp-governance.md](docs/mcp-governance.md) |
 | **Agent Marketplace** | Verified, reusable internal agent templates with compliance badges | [marketplace.md](docs/marketplace.md) |
-| **Enterprise Integrations** | Governed connectors (DBs, SSO, GIS, ITSM) — credentials referenced, never stored | [enterprise-integrations.md](docs/enterprise-integrations.md) |
+| **Enterprise Integrations** | Governed connectors (DBs, SSO, GIS, ITSM) - credentials referenced, never stored | [enterprise-integrations.md](docs/enterprise-integrations.md) |
 | **Government Compliance** | PII classification, retention, approval chains, audit evidence, reporting (UAE PDPL-aware) | [government-compliance.md](docs/government-compliance.md) |
 
 ## Quick start
@@ -92,9 +92,9 @@ cargo test  -p clawforge-controlplane          # 82 tests
 cargo run -p clawforge-controlplane --example demo
 ```
 
-The demo walks a single agent through the whole control plane — marketplace
+The demo walks a single agent through the whole control plane - marketplace
 install → MCP approval → governance → security gateway → observability →
-compliance report — in memory. See [docs/demo.md](docs/demo.md).
+compliance report - in memory. See [docs/demo.md](docs/demo.md).
 
 ### Running the full runtime (optional)
 
@@ -128,27 +128,27 @@ Full index: [docs/README.md](docs/README.md).
 
 ClawForge's control plane governs a complete, local-first agent runtime (Rust workspace):
 
-- **`clawforge-core`** — central schemas (`AgentSpec`, `Message`, `Event`).
-- **`clawforge-gateway` / `clawforge-daemon`** — Tokio WebSocket control plane for sessions, tools, and events.
-- **`clawforge-planner` / `clawforge-executor`** — LLM provider integrations (OpenRouter, Ollama) and sandboxed action execution.
-- **`clawforge-channels`** — deep adapters for Telegram, Discord, Slack, LINE, iMessage, and WhatsApp.
-- **`clawforge-plugins` / `clawforge-browser` / `clawforge-understanding`** — WASM plugins, CDP browser automation, and OCR/STT/PDF media pipelines.
-- **`clawforge-memory` / `clawforge-supervisor`** — vector memory for RAG and SQLite run-state persistence.
+- **`clawforge-core`** - central schemas (`AgentSpec`, `Message`, `Event`).
+- **`clawforge-gateway` / `clawforge-daemon`** - Tokio WebSocket control plane for sessions, tools, and events.
+- **`clawforge-planner` / `clawforge-executor`** - LLM provider integrations (OpenRouter, Ollama) and sandboxed action execution.
+- **`clawforge-channels`** - deep adapters for Telegram, Discord, Slack, LINE, iMessage, and WhatsApp.
+- **`clawforge-plugins` / `clawforge-browser` / `clawforge-understanding`** - WASM plugins, CDP browser automation, and OCR/STT/PDF media pipelines.
+- **`clawforge-memory` / `clawforge-supervisor`** - vector memory for RAG and SQLite run-state persistence.
 
 ## Security
 
-ClawForge connects to real messaging surfaces — treat inbound messages, tool
+ClawForge connects to real messaging surfaces - treat inbound messages, tool
 output, and MCP responses as **untrusted input**. The Security Gateway gates
 *capabilities* (which tool / MCP / model / data an action may use); keep
 untrusted execution sandboxed (the runtime supports Docker isolation). Secrets
-are never stored — integrations hold credential *references* only. Read the full
+are never stored - integrations hold credential *references* only. Read the full
 [security disclaimer](docs/security-disclaimer.md) and [limitations](docs/limitations.md)
 before relying on ClawForge.
 
 ## Contributing
 
 Contributions are welcome. Please read the [developer guide](docs/developer-guide.md)
-and [CONTRIBUTING.md](CONTRIBUTING.md) — work in atomic, well-described commits,
+and [CONTRIBUTING.md](CONTRIBUTING.md) - work in atomic, well-described commits,
 run `cargo test -p clawforge-controlplane` before opening a pull request, and keep
 documentation in step with code.
 
