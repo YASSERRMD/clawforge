@@ -10,7 +10,7 @@ use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
 use clawforge_core::{
-    AuditEventPayload, ClawError, Component, Event, EventKind,
+    AuditEventPayload, Capabilities, ClawError, Component, Event, EventKind,
     Message, ProposedAction,
     tools::ToolRegistry,
 };
