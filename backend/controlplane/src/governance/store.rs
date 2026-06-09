@@ -179,6 +179,10 @@ impl GovernanceEngine {
 
     /// Apply a terminal decision to a pending request (internal helper).
     fn decide(&self, id: &str, status: ApprovalStatus, decided_by: &str, reason: &str) -> Result<ApprovalRequest> {
+        // Every decision must carry a policy reason for the audit trail.
+        if reason.trim().is_empty() {
+            return Err(ControlPlaneError::validation("a decision reason is required"));
+        }
         let current = self.get(id)?;
         if current.status.is_decided() {
             return Err(ControlPlaneError::Conflict(format!(
