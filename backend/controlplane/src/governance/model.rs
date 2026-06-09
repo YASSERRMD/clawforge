@@ -23,6 +23,25 @@ pub enum ApprovalKind {
     Model,
 }
 
+/// Lifecycle of an approval request.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ApprovalStatus {
+    /// Awaiting a human decision.
+    Pending,
+    /// Approved by a human gate.
+    Approved,
+    /// Rejected by a human gate.
+    Rejected,
+}
+
+impl ApprovalStatus {
+    /// Whether a decision has been made (no longer actionable).
+    pub fn is_decided(&self) -> bool {
+        !matches!(self, ApprovalStatus::Pending)
+    }
+}
+
 /// Input used to submit a new approval request. The engine assigns the id,
 /// status, and timestamps.
 #[derive(Debug, Clone, Serialize, Deserialize)]
