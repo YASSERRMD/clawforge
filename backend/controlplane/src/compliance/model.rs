@@ -189,3 +189,56 @@ impl CompliancePolicy {
         Self::new(subject_id, "UAE-PDPL")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pdpl_baseline_defaults() {
+        let p = CompliancePolicy::pdpl("agent-1");
+        assert_eq!(p.framework, "UAE-PDPL");
+        assert_eq!(p.pii_classification, PiiClassification::NonPii);
+        assert!(!p.investigation_mode);
+        assert_eq!(p.export_control, ExportControl::Restricted);
+    }
+
+    #[test]
+    fn retention_window() {
+        let mut p = CompliancePolicy::pdpl("agent-1");
+        p.data_retention_days = 30;
+        assert!(!p.is_past_retention(10));
+        assert!(p.is_past_retention(31));
+        // Indefinite retention is never past due.
+        p.data_retention_days = 0;
+        assert!(!p.is_past_retention(99999));
+    }
+
+    #[test]
+    fn investigation_mode_holds_records() {
+        let mut p = CompliancePolicy::pdpl("agent-1");
+        p.data_retention_days = 30;
+        p.investigation_mode = true;
+        // Legal hold overrides routine deletion.
+        assert!(!p.is_past_retention(365));
+    }
+
+    #[test]
+    fn pii_and_export_helpers() {
+        assert!(PiiClassification::SensitivePii.is_regulated());
+        assert!(!PiiClassification::NonPii.is_regulated());
+        assert!(ExportControl::Unrestricted.allows_export());
+        assert!(!ExportControl::Prohibited.allows_export());
+    }
+
+    #[test]
+    fn approval_chain_progresses_in_order() {
+        let mut chain = ApprovalChain::from_roles("agent-1", &["data-owner", "dpo", "ciso"]);
+        assert!(!chain.is_complete());
+        assert_eq!(chain.approve_next("alice", 1), Some(0));
+        assert_eq!(chain.approve_next("bob", 2), Some(1));
+        assert_eq!(chain.approve_next("carol", 3), Some(2));
+        assert!(chain.is_complete());
+        assert_eq!(chain.approve_next("dave", 4), None);
+    }
+}
