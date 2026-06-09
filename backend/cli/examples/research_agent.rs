@@ -12,7 +12,8 @@ use clawforge_core::{
     types::{MemoryConfig, Role},
 };
 use clawforge_executor::Executor;
-use clawforge_memory::{InMemoryVectorStore, MemoryStore, VectorEntry, MemoryQuery};
+use clawforge_memory::{InMemoryVectorStore, MemoryStore};
+use clawforge_memory::types::{VectorEntry, MemoryQuery};
 use clawforge_planner::providers::ProviderRegistry;
 use clawforge_planner::LlmPlanner;
 use clawforge_scheduler::Scheduler;
@@ -41,6 +42,7 @@ impl Component for MemoryService {
                         vector: req.query_vector,
                         min_score: req.min_score,
                         limit: req.limit,
+                        ..Default::default()
                     };
 
                     match self.store.search(query).await {
@@ -93,6 +95,7 @@ async fn run_memory_service(
                 vector: req.query_vector,
                 min_score: req.min_score,
                 limit: req.limit,
+                ..Default::default()
             };
 
             if let Ok(results) = store.search(query).await {
@@ -130,6 +133,8 @@ async fn main() -> Result<()> {
         content: "Rust 1.75 stabilized async traits in traits.".to_string(),
         vector: vec![0.0; 1536], // Mock vector
         metadata: serde_json::json!({"source": "manual_entry"}),
+        created_at: 0,
+        session_id: None,
     };
     memory_store.upsert(fact1).await?;
 
@@ -154,6 +159,7 @@ async fn main() -> Result<()> {
         }),
         workflow: vec![],
         allowed_tools: vec![],
+        allowed_skills: vec![],
     };
 
     // 3. Wiring
@@ -217,7 +223,7 @@ async fn main() -> Result<()> {
     tokio::time::sleep(Duration::from_secs(3)).await;
 
     // 6. Verify Log
-    let runs = supervisor.get_recent_runs(10)?;
+    let runs = supervisor.get_recent_runs(10, 0)?;
     info!("Recent runs: {}", serde_json::to_string_pretty(&runs)?);
 
     Ok(())

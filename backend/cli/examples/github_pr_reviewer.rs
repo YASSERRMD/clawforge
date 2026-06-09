@@ -44,6 +44,7 @@ async fn main() -> Result<()> {
             allowed_domains: vec!["api.github.com".to_string()],
             max_tokens_per_run: Some(1000),
             max_cost_per_run_usd: Some(0.10),
+            ..Default::default()
         },
         llm_policy: LlmPolicy {
             providers: vec!["openrouter".to_string(), "ollama".to_string()],
@@ -65,6 +66,7 @@ async fn main() -> Result<()> {
             },
         ],
         allowed_tools: vec![],
+        allowed_skills: vec![],
     };
 
     info!(agent_id = %pr_reviewer.id, "Defined PR Reviewer agent");
@@ -136,7 +138,7 @@ async fn main() -> Result<()> {
     tokio::time::sleep(Duration::from_secs(5)).await;
     
     // 9. Check results
-    let runs = supervisor.get_recent_runs(10)?;
+    let runs = supervisor.get_recent_runs(10, 0)?;
     info!("Demo finished. Recent runs: {}", serde_json::to_string_pretty(&runs)?);
 
     Ok(())

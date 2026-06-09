@@ -103,6 +103,8 @@ mod tests {
             content: "The cat sits on the mat".to_string(),
             vector: vec![1.0, 0.0, 0.0],
             metadata: serde_json::json!({}),
+            created_at: 0,
+            session_id: None,
         };
 
         let entry2 = VectorEntry {
@@ -110,6 +112,8 @@ mod tests {
             content: "The dog barks at the mailman".to_string(),
             vector: vec![0.0, 1.0, 0.0],
             metadata: serde_json::json!({}),
+            created_at: 0,
+            session_id: None,
         };
 
         store.upsert(entry1.clone()).await.unwrap();
@@ -120,6 +124,7 @@ mod tests {
             vector: vec![0.9, 0.1, 0.0],
             min_score: 0.5,
             limit: 1,
+            ..Default::default()
         };
 
         let results = store.search(query).await.unwrap();

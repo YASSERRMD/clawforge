@@ -38,6 +38,7 @@ async fn main() -> Result<()> {
             allowed_domains: vec![],
             max_tokens_per_run: None,
             max_cost_per_run_usd: None,
+            ..Default::default()
         },
         llm_policy: LlmPolicy {
             providers: vec!["mock".to_string()],
@@ -50,6 +51,7 @@ async fn main() -> Result<()> {
         memory_config: None,
         workflow: vec![],
         allowed_tools: vec!["file_write".to_string()],
+        allowed_skills: vec![],
     };
 
     // 3. Wiring
@@ -111,7 +113,7 @@ async fn main() -> Result<()> {
     tokio::time::sleep(Duration::from_secs(2)).await;
 
     // 7. Verify Log
-    let runs = supervisor.get_recent_runs(5)?;
+    let runs = supervisor.get_recent_runs(5, 0)?;
     info!("Runs: {}", serde_json::to_string_pretty(&runs)?);
 
     // 8. checks
