@@ -27,6 +27,66 @@ impl PiiClassification {
     }
 }
 
+/// A single step in a multi-party approval chain.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApprovalStep {
+    /// The role responsible for this step (e.g. `data-owner`, `dpo`, `ciso`).
+    pub role: String,
+    /// Who signed off, once approved.
+    pub approver: Option<String>,
+    /// Whether this step has been approved.
+    pub approved: bool,
+    /// Approval time, if approved.
+    pub approved_at: Option<i64>,
+}
+
+/// An ordered, multi-party approval chain — high-risk government actions often
+/// require sign-off from several roles in sequence.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApprovalChain {
+    pub subject_id: String,
+    pub steps: Vec<ApprovalStep>,
+}
+
+impl ApprovalChain {
+    /// Build a chain from an ordered list of role names.
+    pub fn from_roles(subject_id: impl Into<String>, roles: &[&str]) -> Self {
+        ApprovalChain {
+            subject_id: subject_id.into(),
+            steps: roles
+                .iter()
+                .map(|r| ApprovalStep {
+                    role: (*r).to_string(),
+                    approver: None,
+                    approved: false,
+                    approved_at: None,
+                })
+                .collect(),
+        }
+    }
+
+    /// Index of the next step awaiting approval, if any.
+    pub fn next_pending(&self) -> Option<usize> {
+        self.steps.iter().position(|s| !s.approved)
+    }
+
+    /// Whether every step has been approved.
+    pub fn is_complete(&self) -> bool {
+        self.steps.iter().all(|s| s.approved)
+    }
+
+    /// Approve the next pending step in order. Returns the approved step index,
+    /// or `None` if the chain was already complete.
+    pub fn approve_next(&mut self, approver: impl Into<String>, at: i64) -> Option<usize> {
+        let idx = self.next_pending()?;
+        let step = &mut self.steps[idx];
+        step.approved = true;
+        step.approver = Some(approver.into());
+        step.approved_at = Some(at);
+        Some(idx)
+    }
+}
+
 /// A compliance policy applied to a subject (agent id or department name).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompliancePolicy {

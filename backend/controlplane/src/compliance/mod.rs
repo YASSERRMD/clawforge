@@ -3,4 +3,4 @@
 
 pub mod model;
 
-pub use model::{CompliancePolicy, PiiClassification};
+pub use model::{ApprovalChain, ApprovalStep, CompliancePolicy, PiiClassification};
