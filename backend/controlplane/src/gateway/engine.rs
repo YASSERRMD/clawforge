@@ -39,6 +39,7 @@ impl SecurityGateway {
         self.check_model(req, &mut denials);
         self.check_data_access(req, &mut denials);
         self.check_capabilities(req, &mut denials);
+        self.check_budget(req, &mut denials);
 
         SecurityDecision::new(denials, 0, Utc::now().timestamp())
     }
@@ -103,6 +104,17 @@ impl SecurityGateway {
         }
         if req.touches_pii && !self.policy.allow_pii_access {
             denials.push("PII access is not permitted by policy".into());
+        }
+    }
+
+    /// Projected spend (already spent + this action) must stay within budget.
+    fn check_budget(&self, req: &ActionRequest, denials: &mut Vec<String>) {
+        let projected = req.spent_so_far + req.estimated_cost;
+        if projected > self.policy.budget_limit {
+            denials.push(format!(
+                "budget exceeded: projected {:.2} > limit {:.2}",
+                projected, self.policy.budget_limit
+            ));
         }
     }
 
