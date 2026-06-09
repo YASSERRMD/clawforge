@@ -42,6 +42,40 @@ const SCHEMA: &str = "
     CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
 ";
 
+/// Column list in a fixed order shared by every SELECT and [`row_to_record`].
+const COLUMNS: &str = "id, name, description, owner, department, framework, \
+    model_provider, model_name, tools_allowed, mcp_servers_allowed, \
+    data_access_level, risk_level, status, version, created_at, updated_at";
+
+/// Map a SQLite row (selecting [`COLUMNS`]) into an [`AgentRecord`].
+fn row_to_record(row: &rusqlite::Row) -> rusqlite::Result<AgentRecord> {
+    Ok(AgentRecord {
+        id: row.get(0)?,
+        name: row.get(1)?,
+        description: row.get(2)?,
+        owner: row.get(3)?,
+        department: row.get(4)?,
+        framework: row.get(5)?,
+        model_provider: row.get(6)?,
+        model_name: row.get(7)?,
+        tools_allowed: de(&row.get::<_, String>(8)?, 8)?,
+        mcp_servers_allowed: de(&row.get::<_, String>(9)?, 9)?,
+        data_access_level: de(&row.get::<_, String>(10)?, 10)?,
+        risk_level: de(&row.get::<_, String>(11)?, 11)?,
+        status: de(&row.get::<_, String>(12)?, 12)?,
+        version: row.get(13)?,
+        created_at: row.get(14)?,
+        updated_at: row.get(15)?,
+    })
+}
+
+/// Deserialize a JSON-encoded column value, surfacing parse errors as SQLite
+/// conversion failures so they propagate through `query_map`.
+fn de<T: serde::de::DeserializeOwned>(s: &str, col: usize) -> rusqlite::Result<T> {
+    serde_json::from_str(s)
+        .map_err(|e| rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e)))
+}
+
 impl AgentRegistry {
     /// Open (creating if needed) a registry backed by a file.
     pub fn open(path: &str) -> Result<Self> {
@@ -89,6 +123,18 @@ impl AgentRegistry {
         )?;
         cp_info!("registry.agent.create", agent_id = %record.id, name = %record.name);
         Ok(record)
+    }
+
+    /// List all registered agents, newest first.
+    pub fn list(&self) -> Result<Vec<AgentRecord>> {
+        let conn = self.conn.lock().expect("registry mutex poisoned");
+        let mut stmt = conn.prepare(&format!("SELECT {COLUMNS} FROM agents ORDER BY created_at DESC"))?;
+        let rows = stmt.query_map([], row_to_record)?;
+        let mut out = Vec::new();
+        for row in rows {
+            out.push(row?);
+        }
+        Ok(out)
     }
 
     /// Total number of registered agents.
