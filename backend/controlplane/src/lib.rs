@@ -13,5 +13,7 @@
 
 // Domain modules are wired in here as each phase lands.
 pub mod config;
+pub mod constants;
 
 pub use config::ControlPlaneConfig;
+pub use constants::{DataAccessLevel, LifecycleStatus, RiskLevel};
