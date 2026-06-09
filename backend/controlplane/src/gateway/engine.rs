@@ -37,6 +37,7 @@ impl SecurityGateway {
         self.check_tool(req, &mut denials);
         self.check_mcp(req, &mut denials);
         self.check_model(req, &mut denials);
+        self.check_data_access(req, &mut denials);
 
         SecurityDecision::new(denials, 0, Utc::now().timestamp())
     }
@@ -68,6 +69,23 @@ impl SecurityGateway {
                     req.agent.model_name
                 ));
             }
+        }
+    }
+
+    /// The action's data sensitivity must not exceed the agent's clearance nor
+    /// the policy's ceiling (`DataAccessLevel` is ordered).
+    fn check_data_access(&self, req: &ActionRequest, denials: &mut Vec<String>) {
+        if req.data_access_level > req.agent.data_access_level {
+            denials.push(format!(
+                "action data access {:?} exceeds agent clearance {:?}",
+                req.data_access_level, req.agent.data_access_level
+            ));
+        }
+        if req.data_access_level > self.policy.max_data_access_level {
+            denials.push(format!(
+                "action data access {:?} exceeds policy ceiling {:?}",
+                req.data_access_level, self.policy.max_data_access_level
+            ));
         }
     }
 
