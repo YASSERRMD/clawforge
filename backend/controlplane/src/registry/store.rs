@@ -13,6 +13,7 @@ use rusqlite::{params, Connection};
 use crate::constants::LifecycleStatus;
 use crate::error::{ControlPlaneError, Result};
 
+use super::lifecycle::can_transition;
 use super::model::{AgentRecord, AgentUpdate, NewAgent};
 use super::validation::{validate_new_agent, validate_record};
 
@@ -185,6 +186,22 @@ impl AgentRegistry {
             rusqlite::Error::QueryReturnedNoRows => ControlPlaneError::not_found("agent", id),
             other => other.into(),
         })
+    }
+
+    /// Transition an agent to a new lifecycle status, enforcing the allowed
+    /// transitions in [`lifecycle::can_transition`]. Returns the updated record.
+    pub fn set_status(&self, id: &str, to: LifecycleStatus) -> Result<AgentRecord> {
+        let current = self.get(id)?;
+        if current.status == to {
+            return Ok(current);
+        }
+        if !can_transition(current.status, to) {
+            return Err(ControlPlaneError::denied(format!(
+                "invalid status transition {:?} -> {:?}",
+                current.status, to
+            )));
+        }
+        self.write_status(id, to)
     }
 
     /// Permanently deactivate an agent. Returns the updated record.
