@@ -12,6 +12,7 @@ use uuid::Uuid;
 use crate::error::Result;
 
 use super::event::{EventKind, ExecutionEvent, NewExecutionEvent};
+use super::model::AgentMetrics;
 
 /// Store of execution events; the source for all observability metrics.
 pub struct ObservabilityStore {
@@ -80,6 +81,28 @@ impl ObservabilityStore {
             ],
         )?;
         Ok(event)
+    }
+
+    /// Build the full dashboard summary for one agent, or the whole fleet when
+    /// `agent` is `None`.
+    pub fn summary(&self, agent: Option<&str>) -> Result<AgentMetrics> {
+        Ok(AgentMetrics {
+            agent_id: agent.unwrap_or("*").to_string(),
+            task_count: self.task_count(agent)?,
+            successful_tasks: self.successful_tasks(agent)?,
+            failed_tasks: self.failed_tasks(agent)?,
+            tool_failure_rate: self.tool_failure_rate(agent)?,
+            model_failure_rate: self.model_failure_rate(agent)?,
+            average_latency_ms: self.average_latency_ms(agent)?,
+            average_cost: self.average_cost(agent)?,
+            total_cost: self.total_cost(agent)?,
+            human_intervention_count: self.human_intervention_count(agent)?,
+            approval_waiting_count: self.approval_waiting_count(agent)?,
+            blocked_executions: self.blocked_count(agent)?,
+            risk_events: self.risk_event_count(agent)?,
+            hallucination_flag_count: self.hallucination_count(agent)?,
+            mcp_call_count: self.mcp_call_count(agent)?,
+        })
     }
 
     /// Count events of a kind (optionally scoped to one agent).
