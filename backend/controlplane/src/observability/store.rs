@@ -257,22 +257,71 @@ impl ObservabilityStore {
 mod tests {
     use super::*;
 
+    fn tool(agent: &str, ok: bool) -> NewExecutionEvent {
+        NewExecutionEvent {
+            agent_id: agent.into(),
+            kind: EventKind::ToolCall,
+            name: Some("search".into()),
+            success: Some(ok),
+            latency_ms: None,
+            cost: None,
+            detail: serde_json::Value::Null,
+        }
+    }
+
     #[test]
     fn log_and_count_events() {
         let store = ObservabilityStore::in_memory().unwrap();
         store.log_event(NewExecutionEvent::task("agent-1", true, 120, 0.02)).unwrap();
-        store
-            .log_event(NewExecutionEvent {
-                agent_id: "agent-2".into(),
-                kind: EventKind::ToolCall,
-                name: Some("search".into()),
-                success: Some(true),
-                latency_ms: None,
-                cost: None,
-                detail: serde_json::Value::Null,
-            })
-            .unwrap();
+        store.log_event(tool("agent-2", true)).unwrap();
         assert_eq!(store.event_count(None).unwrap(), 2);
         assert_eq!(store.event_count(Some("agent-1")).unwrap(), 1);
+    }
+
+    #[test]
+    fn task_metrics_compute() {
+        let store = ObservabilityStore::in_memory().unwrap();
+        store.log_event(NewExecutionEvent::task("a", true, 100, 0.10)).unwrap();
+        store.log_event(NewExecutionEvent::task("a", true, 300, 0.30)).unwrap();
+        store.log_event(NewExecutionEvent::task("a", false, 200, 0.20)).unwrap();
+        assert_eq!(store.task_count(Some("a")).unwrap(), 3);
+        assert_eq!(store.successful_tasks(Some("a")).unwrap(), 2);
+        assert_eq!(store.failed_tasks(Some("a")).unwrap(), 1);
+        assert_eq!(store.average_latency_ms(Some("a")).unwrap(), 200.0);
+        assert!((store.total_cost(Some("a")).unwrap() - 0.60).abs() < 1e-9);
+        assert!((store.average_cost(Some("a")).unwrap() - 0.20).abs() < 1e-9);
+    }
+
+    #[test]
+    fn failure_rates_compute() {
+        let store = ObservabilityStore::in_memory().unwrap();
+        store.log_event(tool("a", true)).unwrap();
+        store.log_event(tool("a", true)).unwrap();
+        store.log_event(tool("a", true)).unwrap();
+        store.log_event(tool("a", false)).unwrap();
+        assert!((store.tool_failure_rate(Some("a")).unwrap() - 0.25).abs() < 1e-9);
+        // No model calls => rate is 0.0, not NaN.
+        assert_eq!(store.model_failure_rate(Some("a")).unwrap(), 0.0);
+    }
+
+    #[test]
+    fn empty_scope_summary_is_safe() {
+        let store = ObservabilityStore::in_memory().unwrap();
+        let s = store.summary(Some("nobody")).unwrap();
+        assert_eq!(s.task_count, 0);
+        assert_eq!(s.tool_failure_rate, 0.0);
+        assert_eq!(s.agent_id, "nobody");
+    }
+
+    #[test]
+    fn fleet_summary_aggregates_all_agents() {
+        let store = ObservabilityStore::in_memory().unwrap();
+        store.log_event(NewExecutionEvent::task("a", true, 100, 0.1)).unwrap();
+        store.log_event(NewExecutionEvent::task("b", false, 100, 0.1)).unwrap();
+        let fleet = store.summary(None).unwrap();
+        assert_eq!(fleet.agent_id, "*");
+        assert_eq!(fleet.task_count, 2);
+        assert_eq!(fleet.successful_tasks, 1);
+        assert_eq!(fleet.failed_tasks, 1);
     }
 }
