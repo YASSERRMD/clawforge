@@ -74,3 +74,16 @@ sequenceDiagram
         GOV-->>Dev: rejected with reason
     end
 ```
+
+## MCP governance flow
+
+```mermaid
+flowchart LR
+    R[register] --> P{{pending_approval}}
+    P -->|review risk + sensitive tools| A[approve]
+    P -->|reject| B[blocked]
+    A --> ACT{{active}}
+    ACT -->|record_usage / record_health| ACT
+    ACT -->|block| B
+    ACT -. consulted by .-> GW[Security Gateway]
+```
