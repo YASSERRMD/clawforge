@@ -12,7 +12,7 @@ use crate::constants::RiskLevel;
 use crate::error::{ControlPlaneError, Result};
 use crate::registry::{AgentRecord, AgentRegistry};
 
-use super::model::{MarketplaceAgent, NewListing};
+use super::model::{MarketplaceAgent, NewListing, VerificationBadge};
 
 /// Store of published marketplace listings.
 pub struct Marketplace {
@@ -140,6 +140,15 @@ impl Marketplace {
         self.upsert(&listing)?;
         cp_info!("marketplace.install", listing_id = %listing_id, agent_id = %agent.id);
         Ok(agent)
+    }
+
+    /// Set the verification badge on a listing (platform-team action).
+    pub fn set_verification(&self, listing_id: &str, badge: VerificationBadge) -> Result<MarketplaceAgent> {
+        let mut listing = self.get(listing_id)?;
+        listing.verification = badge;
+        self.upsert(&listing)?;
+        cp_info!("marketplace.verify", listing_id = %listing_id, badge = ?badge);
+        Ok(listing)
     }
 
     /// Fetch a listing by id.
