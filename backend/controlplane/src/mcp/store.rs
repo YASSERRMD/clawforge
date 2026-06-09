@@ -11,7 +11,7 @@ use rusqlite::{params, Connection};
 use crate::constants::LifecycleStatus;
 use crate::error::{ControlPlaneError, Result};
 
-use super::model::{McpServer, NewMcpServer};
+use super::model::{HealthStatus, McpServer, NewMcpServer};
 
 /// Persistent registry of MCP servers.
 pub struct McpRegistry {
@@ -144,6 +144,19 @@ impl McpRegistry {
         server.cost_estimate += cost;
         server.updated_at = Utc::now().timestamp();
         self.upsert(&server)?;
+        Ok(server)
+    }
+
+    /// Record a health-check result, updating the server's health and the
+    /// `last_health_check` timestamp. Returns the updated record.
+    pub fn record_health(&self, id: &str, health: HealthStatus) -> Result<McpServer> {
+        let mut server = self.get(id)?;
+        let now = Utc::now().timestamp();
+        server.health = health;
+        server.last_health_check = Some(now);
+        server.updated_at = now;
+        self.upsert(&server)?;
+        cp_info!("mcp.health", server_id = %id, health = ?health);
         Ok(server)
     }
 
