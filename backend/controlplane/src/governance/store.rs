@@ -215,6 +215,14 @@ impl GovernanceEngine {
         self.query_requests(&format!("SELECT {COLUMNS} FROM approval_requests ORDER BY created_at DESC"), [])
     }
 
+    /// List approval requests with a given status (e.g. all `Pending`).
+    pub fn list_by_status(&self, status: ApprovalStatus) -> Result<Vec<ApprovalRequest>> {
+        self.query_requests(
+            &format!("SELECT {COLUMNS} FROM approval_requests WHERE status = ?1 ORDER BY created_at DESC"),
+            params![serde_json::to_string(&status)?],
+        )
+    }
+
     /// Run a SELECT returning approval requests (internal helper).
     fn query_requests<P: rusqlite::Params>(&self, sql: &str, params: P) -> Result<Vec<ApprovalRequest>> {
         let conn = self.conn.lock().expect("governance mutex poisoned");
