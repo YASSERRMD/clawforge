@@ -42,7 +42,8 @@ impl SecurityGateway {
         self.check_budget(req, &mut denials);
         self.check_human_approval(req, &mut denials);
 
-        SecurityDecision::new(denials, 0, Utc::now().timestamp())
+        let risk_score = Self::risk_score(req, denials.len());
+        SecurityDecision::new(denials, risk_score, Utc::now().timestamp())
     }
 
     /// The tool, if any, must be on the agent's allow-list.
@@ -128,6 +129,33 @@ impl SecurityGateway {
                 req.agent.risk_level
             ));
         }
+    }
+
+    /// Compute an aggregate risk score (0–100) for an action.
+    ///
+    /// Combines the agent's inherent risk, the data sensitivity touched, the
+    /// sensitive capabilities requested, and how many checks objected.
+    fn risk_score(req: &ActionRequest, denial_count: usize) -> u32 {
+        let mut score = req.agent.risk_level.weight() as u32 * 10; // 10..=40
+        score += match req.data_access_level {
+            crate::constants::DataAccessLevel::Restricted => 20,
+            crate::constants::DataAccessLevel::Confidential => 12,
+            crate::constants::DataAccessLevel::Internal => 6,
+            crate::constants::DataAccessLevel::Public => 2,
+            crate::constants::DataAccessLevel::None => 0,
+        };
+        for flag in [
+            req.requires_external_network,
+            req.is_file_export,
+            req.is_database_write,
+            req.touches_pii,
+        ] {
+            if flag {
+                score += 5;
+            }
+        }
+        score += denial_count as u32 * 5;
+        score.min(100)
     }
 
     /// Base check: the agent must be active and not blocked/deactivated.
