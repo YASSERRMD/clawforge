@@ -113,9 +113,13 @@ pub const CATALOG: &[ProviderInfo] = &[
     ProviderInfo { id: "qwen", display_name: "Alibaba Qwen (DashScope)", region: Region::China,
         base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1", env_var: "DASHSCOPE_API_KEY", wire: Wire::OpenAiCompatible,
         example_models: &["qwen-max", "qwen-plus", "qwen2.5-72b-instruct"], data_residency: "China-hosted; an international endpoint is also available" },
-    ProviderInfo { id: "zhipu", display_name: "Zhipu AI (GLM)", region: Region::China,
+    ProviderInfo { id: "zhipu", display_name: "Zhipu AI (GLM, BigModel)", region: Region::China,
         base_url: "https://open.bigmodel.cn/api/paas/v4", env_var: "ZHIPU_API_KEY", wire: Wire::OpenAiCompatible,
-        example_models: &["glm-4.6", "glm-4-plus"], data_residency: "China-hosted" },
+        example_models: &["glm-4.6", "glm-4-plus"], data_residency: "China-hosted (mainland BigModel endpoint)" },
+    ProviderInfo { id: "zai", display_name: "Z.AI (Zhipu international, GLM)", region: Region::China,
+        base_url: "https://api.z.ai/api/paas/v4", env_var: "ZAI_API_KEY", wire: Wire::OpenAiCompatible,
+        example_models: &["glm-4.6", "glm-4.5", "glm-4.5-air"],
+        data_residency: "Zhipu's international GLM endpoint; coding-plan keys use /api/coding/paas/v4" },
     ProviderInfo { id: "moonshot", display_name: "Moonshot AI (Kimi)", region: Region::China,
         base_url: "https://api.moonshot.cn/v1", env_var: "MOONSHOT_API_KEY", wire: Wire::OpenAiCompatible,
         example_models: &["moonshot-v1-128k", "kimi-k2-0905-preview"], data_residency: "China-hosted; a global endpoint is also available" },
@@ -205,10 +209,18 @@ mod tests {
 
     #[test]
     fn covers_major_chinese_providers() {
-        for id in ["deepseek", "qwen", "zhipu", "moonshot", "baidu", "minimax", "tencent", "yi"] {
+        for id in ["deepseek", "qwen", "zhipu", "zai", "moonshot", "baidu", "minimax", "tencent", "yi"] {
             assert!(get(id).is_some(), "missing Chinese provider {id}");
         }
         assert!(chinese().len() >= 10, "expected at least 10 China-hosted providers");
+    }
+
+    #[test]
+    fn zai_is_openai_compatible_with_z_ai_base() {
+        let z = get("zai").unwrap();
+        assert_eq!(z.wire, Wire::OpenAiCompatible);
+        assert!(z.base_url.contains("api.z.ai"));
+        assert_eq!(z.env_var, "ZAI_API_KEY");
     }
 
     #[test]
