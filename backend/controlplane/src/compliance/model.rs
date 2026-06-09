@@ -37,6 +37,9 @@ pub struct CompliancePolicy {
     /// PII handling classification.
     #[serde(default = "default_pii")]
     pub pii_classification: PiiClassification,
+    /// Data retention period in days; `0` means "retain indefinitely".
+    #[serde(default)]
+    pub data_retention_days: u32,
 }
 
 fn default_pii() -> PiiClassification {
@@ -50,7 +53,14 @@ impl CompliancePolicy {
             subject_id: subject_id.into(),
             framework: framework.into(),
             pii_classification: PiiClassification::NonPii,
+            data_retention_days: 0,
         }
+    }
+
+    /// Whether a record `age_days` old is past this policy's retention window.
+    /// Indefinite retention (`0`) is never past due.
+    pub fn is_past_retention(&self, age_days: u32) -> bool {
+        self.data_retention_days != 0 && age_days > self.data_retention_days
     }
 
     /// A baseline UAE PDPL policy for a subject.
