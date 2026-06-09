@@ -136,6 +136,17 @@ impl McpRegistry {
         self.set_status(id, LifecycleStatus::Blocked)
     }
 
+    /// Record a single usage of a server, incrementing its call count and
+    /// accumulating the estimated cost. Returns the updated record.
+    pub fn record_usage(&self, id: &str, cost: f64) -> Result<McpServer> {
+        let mut server = self.get(id)?;
+        server.usage_count += 1;
+        server.cost_estimate += cost;
+        server.updated_at = Utc::now().timestamp();
+        self.upsert(&server)?;
+        Ok(server)
+    }
+
     /// Update a server's lifecycle status (internal helper).
     fn set_status(&self, id: &str, status: LifecycleStatus) -> Result<McpServer> {
         let mut server = self.get(id)?;
