@@ -86,6 +86,23 @@ impl Marketplace {
         Ok(listing)
     }
 
+    /// List all listings, most-installed first.
+    pub fn list(&self) -> Result<Vec<MarketplaceAgent>> {
+        self.query(&format!("SELECT {COLUMNS} FROM marketplace_listings ORDER BY install_count DESC"), [])
+    }
+
+    /// Run a SELECT returning listings (internal helper).
+    fn query<P: rusqlite::Params>(&self, sql: &str, params: P) -> Result<Vec<MarketplaceAgent>> {
+        let conn = self.conn.lock().expect("marketplace mutex poisoned");
+        let mut stmt = conn.prepare(sql)?;
+        let rows = stmt.query_map(params, row_to_listing)?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
     /// Fetch a listing by id.
     pub fn get(&self, id: &str) -> Result<MarketplaceAgent> {
         let conn = self.conn.lock().expect("marketplace mutex poisoned");
