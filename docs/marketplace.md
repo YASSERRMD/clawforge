@@ -1,5 +1,7 @@
 # Agent Marketplace
 
+![Agent Marketplace](assets/marketplace.png)
+
 The marketplace (`clawforge_controlplane::marketplace`) is a **verified, internal
 catalogue of reusable agent templates**. Teams publish proven agent blueprints;
 other teams install them as governed, registry-tracked agents — without

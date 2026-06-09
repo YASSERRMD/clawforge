@@ -1,5 +1,7 @@
 # Government Compliance Pack
 
+![Government Compliance](assets/government-compliance.png)
+
 The compliance pack (`clawforge_controlplane::compliance`) gives government and
 regulated deployments the controls and evidence to operate agents responsibly:
 PII classification, retention, multi-party approval, audit evidence,

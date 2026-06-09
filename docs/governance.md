@@ -1,5 +1,7 @@
 # Governance Engine
 
+![Governance Engine](assets/governance.png)
+
 The Governance Engine (`clawforge_controlplane::governance`) is the approval
 workflow that decides whether an agent, tool, MCP server, or model is allowed to
 be used. It is the **ServiceNow** layer of the control plane: a human approval
