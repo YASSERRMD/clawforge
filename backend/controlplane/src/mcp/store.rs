@@ -5,8 +5,10 @@
 
 use std::sync::Mutex;
 
+use chrono::Utc;
 use rusqlite::{params, Connection};
 
+use crate::constants::LifecycleStatus;
 use crate::error::{ControlPlaneError, Result};
 
 use super::model::{McpServer, NewMcpServer};
@@ -108,6 +110,21 @@ impl McpRegistry {
             out.push(r?);
         }
         Ok(out)
+    }
+
+    /// Approve a server, making it usable by agents (sets status `Active`).
+    pub fn approve(&self, id: &str) -> Result<McpServer> {
+        self.set_status(id, LifecycleStatus::Active)
+    }
+
+    /// Update a server's lifecycle status (internal helper).
+    fn set_status(&self, id: &str, status: LifecycleStatus) -> Result<McpServer> {
+        let mut server = self.get(id)?;
+        server.status = status;
+        server.updated_at = Utc::now().timestamp();
+        self.upsert(&server)?;
+        cp_info!("mcp.status", server_id = %id, status = ?status);
+        Ok(server)
     }
 
     /// Fetch a server by id, or [`ControlPlaneError::NotFound`].
