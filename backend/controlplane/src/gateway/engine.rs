@@ -38,6 +38,7 @@ impl SecurityGateway {
         self.check_mcp(req, &mut denials);
         self.check_model(req, &mut denials);
         self.check_data_access(req, &mut denials);
+        self.check_capabilities(req, &mut denials);
 
         SecurityDecision::new(denials, 0, Utc::now().timestamp())
     }
@@ -86,6 +87,22 @@ impl SecurityGateway {
                 "action data access {:?} exceeds policy ceiling {:?}",
                 req.data_access_level, self.policy.max_data_access_level
             ));
+        }
+    }
+
+    /// Sensitive capabilities must each be enabled by policy.
+    fn check_capabilities(&self, req: &ActionRequest, denials: &mut Vec<String>) {
+        if req.requires_external_network && !self.policy.allow_external_network {
+            denials.push("external network access is not permitted by policy".into());
+        }
+        if req.is_file_export && !self.policy.allow_file_export {
+            denials.push("file export is not permitted by policy".into());
+        }
+        if req.is_database_write && !self.policy.allow_database_write {
+            denials.push("database writes are not permitted by policy".into());
+        }
+        if req.touches_pii && !self.policy.allow_pii_access {
+            denials.push("PII access is not permitted by policy".into());
         }
     }
 
