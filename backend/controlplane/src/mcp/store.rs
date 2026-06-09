@@ -117,6 +117,11 @@ impl McpRegistry {
         self.set_status(id, LifecycleStatus::Active)
     }
 
+    /// Block a server, preventing agents from using it (sets status `Blocked`).
+    pub fn block(&self, id: &str) -> Result<McpServer> {
+        self.set_status(id, LifecycleStatus::Blocked)
+    }
+
     /// Update a server's lifecycle status (internal helper).
     fn set_status(&self, id: &str, status: LifecycleStatus) -> Result<McpServer> {
         let mut server = self.get(id)?;
