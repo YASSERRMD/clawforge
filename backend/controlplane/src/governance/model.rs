@@ -61,3 +61,55 @@ pub struct NewApprovalRequest {
     /// Justification for the request (why it should be approved).
     pub justification: String,
 }
+
+/// A persisted approval request and its decision state.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApprovalRequest {
+    /// Stable unique identifier (UUID v4).
+    pub id: String,
+    /// What is being approved.
+    pub kind: ApprovalKind,
+    /// Identifier of the subject.
+    pub subject_id: String,
+    /// Human-friendly subject name.
+    pub subject_name: String,
+    /// Who requested approval.
+    pub requested_by: String,
+    /// Owning department.
+    pub department: String,
+    /// Risk level of the subject.
+    pub risk_level: RiskLevel,
+    /// Justification supplied at submission.
+    pub justification: String,
+    /// Current status.
+    pub status: ApprovalStatus,
+    /// Who made the decision (set once decided).
+    pub decided_by: Option<String>,
+    /// Reason recorded with the approval/rejection decision.
+    pub decision_reason: Option<String>,
+    /// Submission time (unix seconds).
+    pub created_at: i64,
+    /// Decision time (unix seconds), if decided.
+    pub decided_at: Option<i64>,
+}
+
+impl ApprovalRequest {
+    /// Build a fresh `Pending` request from a [`NewApprovalRequest`] input.
+    pub fn from_new(input: NewApprovalRequest, id: String, now: i64) -> Self {
+        ApprovalRequest {
+            id,
+            kind: input.kind,
+            subject_id: input.subject_id,
+            subject_name: input.subject_name,
+            requested_by: input.requested_by,
+            department: input.department,
+            risk_level: input.risk_level,
+            justification: input.justification,
+            status: ApprovalStatus::Pending,
+            decided_by: None,
+            decision_reason: None,
+            created_at: now,
+            decided_at: None,
+        }
+    }
+}

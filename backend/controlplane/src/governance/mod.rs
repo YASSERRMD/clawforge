@@ -2,4 +2,4 @@
 
 pub mod model;
 
-pub use model::{ApprovalKind, ApprovalStatus, NewApprovalRequest};
+pub use model::{ApprovalKind, ApprovalRequest, ApprovalStatus, NewApprovalRequest};
