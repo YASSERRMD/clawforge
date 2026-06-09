@@ -14,6 +14,7 @@
 // Domain modules are wired in here as each phase lands.
 #[macro_use]
 pub mod logging;
+pub mod compliance;
 pub mod config;
 pub mod constants;
 pub mod error;
