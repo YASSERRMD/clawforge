@@ -165,6 +165,26 @@ impl ObservabilityStore {
         self.task_aggregate("SUM(cost)", agent)
     }
 
+    /// Failure rate (0.0–1.0) for a call kind; 0.0 when there are no calls.
+    pub fn failure_rate(&self, agent: Option<&str>, kind: EventKind) -> Result<f64> {
+        let total = self.count_kind(agent, kind)?;
+        if total == 0 {
+            return Ok(0.0);
+        }
+        let failed = self.count_kind_success(agent, kind, false)?;
+        Ok(failed as f64 / total as f64)
+    }
+
+    /// Fraction of tool calls that failed.
+    pub fn tool_failure_rate(&self, agent: Option<&str>) -> Result<f64> {
+        self.failure_rate(agent, EventKind::ToolCall)
+    }
+
+    /// Fraction of model calls that failed.
+    pub fn model_failure_rate(&self, agent: Option<&str>) -> Result<f64> {
+        self.failure_rate(agent, EventKind::ModelCall)
+    }
+
     /// Total number of events recorded (optionally scoped to one agent).
     pub fn event_count(&self, agent: Option<&str>) -> Result<u64> {
         let conn = self.conn.lock().expect("observability mutex poisoned");
