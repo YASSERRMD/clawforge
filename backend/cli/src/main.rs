@@ -150,6 +150,15 @@ async fn run_server(config: Config) -> Result<()> {
         info!(url = %url, "Registered Ollama provider");
     }
 
+    // Register every other catalog provider whose API key is present in the
+    // environment (OpenAI, Anthropic, Google, Mistral, xAI, Groq, and the major
+    // Chinese providers: DeepSeek, Qwen, Zhipu/GLM, Moonshot/Kimi, Baidu ERNIE,
+    // MiniMax, Tencent Hunyuan, 01.AI Yi, StepFun, Baichuan, iFlytek, SenseTime).
+    let extra = clawforge_planner::providers::catalog::register_from_env(&mut registry);
+    if !extra.is_empty() {
+        info!(providers = ?extra, "Registered additional model providers from environment");
+    }
+
     let registry = Arc::new(registry);
 
     // Wire up components

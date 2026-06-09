@@ -99,19 +99,25 @@ compliance report — in memory. See [docs/demo.md](docs/demo.md).
 ### Running the full runtime (optional)
 
 ```bash
-export OPENROUTER_API_KEY="sk-or-v1-..."
+# Set a key for any provider(s) you want; the runtime registers each one present.
+export ANTHROPIC_API_KEY="sk-ant-..."   # or OPENAI_API_KEY, DEEPSEEK_API_KEY, OPENROUTER_API_KEY, ...
 cargo run -p clawforge-cli -- serve --port 3000      # local-first gateway
 
 cd frontend && npm install && npm run dev            # dashboard (separate terminal)
 # or: docker-compose up --build
 ```
 
+ClawForge is multi-provider: OpenAI, Anthropic, Google Gemini, Mistral, xAI,
+Groq, OpenRouter, local Ollama, and the major Chinese providers (DeepSeek, Qwen,
+Zhipu GLM, Moonshot/Kimi, Baidu ERNIE, MiniMax, Tencent Hunyuan, 01.AI Yi,
+StepFun, Baichuan, iFlytek, SenseTime). See [docs/model-providers.md](docs/model-providers.md).
+
 Configuration is environment-driven; see [.env.example](.env.example) and
 [docs/installation.md](docs/installation.md).
 
 ## Documentation
 
-- **Start here:** [Product positioning](docs/product-positioning.md) · [Architecture](docs/architecture.md) · [Diagrams](docs/diagrams.md) · [Installation](docs/installation.md) · [Demo](docs/demo.md)
+- **Start here:** [Product positioning](docs/product-positioning.md) · [Architecture](docs/architecture.md) · [Diagrams](docs/diagrams.md) · [Installation](docs/installation.md) · [Model providers](docs/model-providers.md) · [Demo](docs/demo.md)
 - **Use cases:** [Overview](docs/use-cases.md) · [Government municipality](docs/government-municipality.md) · [Enterprise IT](docs/enterprise.md)
 - **Operations:** [UAE PDPL note](docs/uae-pdpl.md) · [Security disclaimer](docs/security-disclaimer.md) · [Roadmap](docs/roadmap.md) · [Limitations](docs/limitations.md)
 - **Contributing:** [Developer guide](docs/developer-guide.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
