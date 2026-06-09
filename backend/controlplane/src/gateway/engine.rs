@@ -40,6 +40,7 @@ impl SecurityGateway {
         self.check_data_access(req, &mut denials);
         self.check_capabilities(req, &mut denials);
         self.check_budget(req, &mut denials);
+        self.check_human_approval(req, &mut denials);
 
         SecurityDecision::new(denials, 0, Utc::now().timestamp())
     }
@@ -114,6 +115,17 @@ impl SecurityGateway {
             denials.push(format!(
                 "budget exceeded: projected {:.2} > limit {:.2}",
                 projected, self.policy.budget_limit
+            ));
+        }
+    }
+
+    /// High/critical-risk actions cannot auto-execute when policy mandates a
+    /// human approval gate.
+    fn check_human_approval(&self, req: &ActionRequest, denials: &mut Vec<String>) {
+        if self.policy.require_human_approval && req.agent.risk_level.requires_approval() {
+            denials.push(format!(
+                "human approval required for {:?}-risk action",
+                req.agent.risk_level
             ));
         }
     }
