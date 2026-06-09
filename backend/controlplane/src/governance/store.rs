@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::error::{ControlPlaneError, Result};
 
-use super::model::{ApprovalRequest, NewApprovalRequest};
+use super::model::{ApprovalRequest, ApprovalStatus, NewApprovalRequest};
 
 /// Approval workflow engine.
 pub struct GovernanceEngine {
@@ -121,6 +121,34 @@ impl GovernanceEngine {
         )?;
         cp_info!("governance.submit", request_id = %req.id, kind = ?req.kind);
         Ok(req)
+    }
+
+    /// Approve a pending request, recording who decided and why.
+    pub fn approve(&self, id: &str, decided_by: &str, reason: &str) -> Result<ApprovalRequest> {
+        self.decide(id, ApprovalStatus::Approved, decided_by, reason)
+    }
+
+    /// Apply a terminal decision to a pending request (internal helper).
+    fn decide(&self, id: &str, status: ApprovalStatus, decided_by: &str, reason: &str) -> Result<ApprovalRequest> {
+        let current = self.get(id)?;
+        if current.status.is_decided() {
+            return Err(ControlPlaneError::Conflict(format!(
+                "request {id} already {:?}",
+                current.status
+            )));
+        }
+        let now = Utc::now().timestamp();
+        {
+            let conn = self.conn.lock().expect("governance mutex poisoned");
+            conn.execute(
+                "UPDATE approval_requests
+                 SET status = ?2, decided_by = ?3, decision_reason = ?4, decided_at = ?5
+                 WHERE id = ?1",
+                params![id, serde_json::to_string(&status)?, decided_by, reason, now],
+            )?;
+        }
+        cp_info!("governance.decide", request_id = %id, status = ?status, actor = %decided_by);
+        self.get(id)
     }
 
     /// Fetch a single request by id.
