@@ -1,0 +1,34 @@
+# ClawForge Diagrams
+
+Mermaid diagrams for the control plane. (GitHub renders these inline.)
+
+## Control-plane architecture
+
+How the control-plane modules relate to each other and to the agent runtime.
+
+```mermaid
+flowchart TB
+    subgraph CP["ClawForge Control Plane"]
+        REG[Agent Registry]
+        GOV[Governance Engine]
+        GW[Security Gateway]
+        OBS[Observability]
+        MCP[MCP Governance]
+        MKT[Marketplace]
+        INT[Enterprise Integrations]
+        COMP[Compliance Pack]
+    end
+
+    MKT -- install --> REG
+    GOV -- approves --> REG
+    GW  -- reads --> REG
+    GW  -- denials --> OBS
+    MCP -- governs --> GW
+    INT -- governs --> GW
+    REG -- subjects --> COMP
+    OBS -- metrics --> COMP
+    GOV -- decisions --> COMP
+
+    CP -. authorises actions .-> RT[Agent Runtime]
+    RT -. execution events .-> OBS
+```
