@@ -292,4 +292,65 @@ mod tests {
         bad.justification = "  ".into();
         assert!(eng.submit(bad).is_err());
     }
+
+    #[test]
+    fn approve_sets_decision_fields() {
+        let eng = GovernanceEngine::in_memory().unwrap();
+        let r = eng.submit(req()).unwrap();
+        let approved = eng.approve(&r.id, "ciso", "meets policy").unwrap();
+        assert_eq!(approved.status, ApprovalStatus::Approved);
+        assert_eq!(approved.decided_by.as_deref(), Some("ciso"));
+        assert_eq!(approved.decision_reason.as_deref(), Some("meets policy"));
+        assert!(approved.decided_at.is_some());
+    }
+
+    #[test]
+    fn reject_sets_rejected_status() {
+        let eng = GovernanceEngine::in_memory().unwrap();
+        let r = eng.submit(req()).unwrap();
+        let rejected = eng.reject(&r.id, "ciso", "insufficient justification").unwrap();
+        assert_eq!(rejected.status, ApprovalStatus::Rejected);
+    }
+
+    #[test]
+    fn decision_requires_reason() {
+        let eng = GovernanceEngine::in_memory().unwrap();
+        let r = eng.submit(req()).unwrap();
+        assert!(eng.approve(&r.id, "ciso", "  ").is_err());
+    }
+
+    #[test]
+    fn cannot_decide_twice() {
+        let eng = GovernanceEngine::in_memory().unwrap();
+        let r = eng.submit(req()).unwrap();
+        eng.approve(&r.id, "ciso", "ok").unwrap();
+        let err = eng.reject(&r.id, "ciso", "changed mind").unwrap_err();
+        assert!(matches!(err, ControlPlaneError::Conflict(_)));
+    }
+
+    #[test]
+    fn history_tracks_submit_and_decision() {
+        let eng = GovernanceEngine::in_memory().unwrap();
+        let r = eng.submit(req()).unwrap();
+        eng.approve(&r.id, "ciso", "ok").unwrap();
+        let hist = eng.history(&r.id).unwrap();
+        assert_eq!(hist.len(), 2);
+        assert_eq!(hist[0].action, "submitted");
+        assert_eq!(hist[1].action, "approved");
+    }
+
+    #[test]
+    fn filters_by_status_and_owner() {
+        let eng = GovernanceEngine::in_memory().unwrap();
+        let a = eng.submit(req()).unwrap();
+        let mut other = req();
+        other.requested_by = "other-team".into();
+        eng.submit(other).unwrap();
+        eng.approve(&a.id, "ciso", "ok").unwrap();
+
+        assert_eq!(eng.list().unwrap().len(), 2);
+        assert_eq!(eng.list_by_status(ApprovalStatus::Pending).unwrap().len(), 1);
+        assert_eq!(eng.list_by_status(ApprovalStatus::Approved).unwrap().len(), 1);
+        assert_eq!(eng.list_by_owner("other-team").unwrap().len(), 1);
+    }
 }
