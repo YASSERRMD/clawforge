@@ -7,4 +7,4 @@ pub mod report;
 pub use model::{
     ApprovalChain, ApprovalStep, AuditEvidence, CompliancePolicy, ExportControl, PiiClassification,
 };
-pub use report::ComplianceReport;
+pub use report::{ComplianceReport, DepartmentComplianceSummary};

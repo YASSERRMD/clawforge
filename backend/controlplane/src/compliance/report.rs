@@ -78,6 +78,54 @@ impl ComplianceReport {
     }
 }
 
+/// A department-level roll-up of per-subject [`ComplianceReport`]s.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DepartmentComplianceSummary {
+    pub department: String,
+    /// Number of subjects assessed.
+    pub subject_count: usize,
+    /// Subjects with no outstanding findings.
+    pub compliant_count: usize,
+    /// Subjects with one or more findings.
+    pub non_compliant_count: usize,
+    /// Subjects currently under investigation.
+    pub under_investigation: usize,
+    /// Every distinct finding across the department.
+    pub findings: Vec<String>,
+    pub generated_at: i64,
+}
+
+impl DepartmentComplianceSummary {
+    /// Roll up a set of reports into a single department summary.
+    pub fn summarize(department: impl Into<String>, reports: &[ComplianceReport]) -> Self {
+        let compliant = reports.iter().filter(|r| r.is_compliant()).count();
+        let under_investigation = reports.iter().filter(|r| r.investigation_mode).count();
+        let mut findings: Vec<String> = reports
+            .iter()
+            .flat_map(|r| r.findings.iter().map(|f| format!("{}: {}", r.subject_id, f)))
+            .collect();
+        findings.sort();
+        DepartmentComplianceSummary {
+            department: department.into(),
+            subject_count: reports.len(),
+            compliant_count: compliant,
+            non_compliant_count: reports.len() - compliant,
+            under_investigation,
+            findings,
+            generated_at: Utc::now().timestamp(),
+        }
+    }
+
+    /// Compliance rate (0.0–1.0); 1.0 when there are no subjects.
+    pub fn compliance_rate(&self) -> f64 {
+        if self.subject_count == 0 {
+            1.0
+        } else {
+            self.compliant_count as f64 / self.subject_count as f64
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
