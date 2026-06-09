@@ -66,3 +66,60 @@ fn bound_len(field: &'static str, value: &str) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn valid() -> NewAgent {
+        NewAgent {
+            name: "Agent".into(),
+            description: "desc".into(),
+            owner: "team".into(),
+            department: "IT".into(),
+            framework: "openclaw".into(),
+            model_provider: "anthropic".into(),
+            model_name: "claude-opus-4-8".into(),
+            tools_allowed: vec![],
+            mcp_servers_allowed: vec![],
+            data_access_level: DataAccessLevel::Internal,
+            risk_level: RiskLevel::Low,
+        }
+    }
+
+    #[test]
+    fn valid_input_passes() {
+        assert!(validate_new_agent(&valid()).is_ok());
+    }
+
+    #[test]
+    fn empty_name_rejected() {
+        let mut a = valid();
+        a.name = "  ".into();
+        assert!(validate_new_agent(&a).is_err());
+    }
+
+    #[test]
+    fn empty_owner_rejected() {
+        let mut a = valid();
+        a.owner = String::new();
+        assert!(validate_new_agent(&a).is_err());
+    }
+
+    #[test]
+    fn overlong_field_rejected() {
+        let mut a = valid();
+        a.name = "x".repeat(MAX_FIELD_LEN + 1);
+        assert!(validate_new_agent(&a).is_err());
+    }
+
+    #[test]
+    fn restricted_data_requires_higher_risk() {
+        let mut a = valid();
+        a.data_access_level = DataAccessLevel::Restricted;
+        a.risk_level = RiskLevel::Low;
+        assert!(validate_new_agent(&a).is_err());
+        a.risk_level = RiskLevel::High;
+        assert!(validate_new_agent(&a).is_ok());
+    }
+}
