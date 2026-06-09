@@ -7,12 +7,13 @@
 
 use std::sync::Mutex;
 
+use chrono::Utc;
 use rusqlite::{params, Connection};
 
 use crate::error::{ControlPlaneError, Result};
 
-use super::model::{AgentRecord, NewAgent};
-use super::validation::validate_new_agent;
+use super::model::{AgentRecord, AgentUpdate, NewAgent};
+use super::validation::{validate_new_agent, validate_record};
 
 /// Persistent store for [`AgentRecord`](super::model::AgentRecord)s.
 pub struct AgentRegistry {
@@ -135,6 +136,40 @@ impl AgentRegistry {
             out.push(row?);
         }
         Ok(out)
+    }
+
+    /// Apply a metadata patch to an agent, bumping its version, and return the
+    /// updated record. Validates the resulting record before persisting.
+    pub fn update(&self, id: &str, patch: AgentUpdate) -> Result<AgentRecord> {
+        let mut record = self.get(id)?;
+        record.apply_patch(&patch);
+        validate_record(&record)?;
+        record.version += 1;
+        record.updated_at = Utc::now().timestamp();
+        let conn = self.conn.lock().expect("registry mutex poisoned");
+        conn.execute(
+            "UPDATE agents SET
+                name = ?2, description = ?3, owner = ?4, department = ?5,
+                tools_allowed = ?6, mcp_servers_allowed = ?7,
+                data_access_level = ?8, risk_level = ?9,
+                version = ?10, updated_at = ?11
+             WHERE id = ?1",
+            params![
+                record.id,
+                record.name,
+                record.description,
+                record.owner,
+                record.department,
+                serde_json::to_string(&record.tools_allowed)?,
+                serde_json::to_string(&record.mcp_servers_allowed)?,
+                serde_json::to_string(&record.data_access_level)?,
+                serde_json::to_string(&record.risk_level)?,
+                record.version,
+                record.updated_at,
+            ],
+        )?;
+        cp_info!("registry.agent.update", agent_id = %record.id, version = record.version);
+        Ok(record)
     }
 
     /// Fetch a single agent by id, or [`ControlPlaneError::NotFound`].

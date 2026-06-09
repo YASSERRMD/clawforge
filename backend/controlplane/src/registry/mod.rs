@@ -4,6 +4,6 @@ pub mod model;
 pub mod store;
 pub mod validation;
 
-pub use model::{AgentRecord, NewAgent};
+pub use model::{AgentRecord, AgentUpdate, NewAgent};
 pub use store::AgentRegistry;
-pub use validation::validate_new_agent;
+pub use validation::{validate_new_agent, validate_record};

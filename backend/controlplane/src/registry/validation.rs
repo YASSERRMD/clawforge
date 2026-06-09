@@ -6,7 +6,7 @@
 use crate::constants::{DataAccessLevel, RiskLevel};
 use crate::error::{ControlPlaneError, Result};
 
-use super::model::NewAgent;
+use super::model::{AgentRecord, NewAgent};
 
 /// Maximum length for free-text fields, to keep records bounded.
 const MAX_FIELD_LEN: usize = 200;
@@ -32,6 +32,22 @@ pub fn validate_new_agent(input: &NewAgent) -> Result<()> {
         ));
     }
 
+    Ok(())
+}
+
+/// Validate an existing record after a metadata patch has been applied.
+pub fn validate_record(record: &AgentRecord) -> Result<()> {
+    require_non_empty("name", &record.name)?;
+    require_non_empty("owner", &record.owner)?;
+    require_non_empty("department", &record.department)?;
+    bound_len("name", &record.name)?;
+    bound_len("owner", &record.owner)?;
+    bound_len("department", &record.department)?;
+    if record.data_access_level == DataAccessLevel::Restricted && record.risk_level == RiskLevel::Low {
+        return Err(ControlPlaneError::validation(
+            "agents with restricted data access must be at least medium risk",
+        ));
+    }
     Ok(())
 }
 

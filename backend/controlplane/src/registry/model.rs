@@ -66,7 +66,50 @@ pub struct NewAgent {
     pub risk_level: RiskLevel,
 }
 
+/// Partial update applied to an existing agent. Every field is optional;
+/// `None` leaves the current value untouched. Lifecycle status is changed via
+/// the dedicated status APIs, not here.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AgentUpdate {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub owner: Option<String>,
+    pub department: Option<String>,
+    pub tools_allowed: Option<Vec<String>>,
+    pub mcp_servers_allowed: Option<Vec<String>>,
+    pub data_access_level: Option<DataAccessLevel>,
+    pub risk_level: Option<RiskLevel>,
+}
+
 impl AgentRecord {
+    /// Apply an [`AgentUpdate`] patch in place (does not bump version/time).
+    pub fn apply_patch(&mut self, patch: &AgentUpdate) {
+        if let Some(v) = &patch.name {
+            self.name = v.clone();
+        }
+        if let Some(v) = &patch.description {
+            self.description = v.clone();
+        }
+        if let Some(v) = &patch.owner {
+            self.owner = v.clone();
+        }
+        if let Some(v) = &patch.department {
+            self.department = v.clone();
+        }
+        if let Some(v) = &patch.tools_allowed {
+            self.tools_allowed = v.clone();
+        }
+        if let Some(v) = &patch.mcp_servers_allowed {
+            self.mcp_servers_allowed = v.clone();
+        }
+        if let Some(v) = patch.data_access_level {
+            self.data_access_level = v;
+        }
+        if let Some(v) = patch.risk_level {
+            self.risk_level = v;
+        }
+    }
+
     /// Materialise a fresh `AgentRecord` from a [`NewAgent`] input.
     ///
     /// New agents start in [`LifecycleStatus::Draft`] at version 1.
