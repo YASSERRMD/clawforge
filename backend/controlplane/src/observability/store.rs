@@ -190,6 +190,31 @@ impl ObservabilityStore {
         self.count_kind(agent, EventKind::McpCall)
     }
 
+    /// Number of risk events flagged.
+    pub fn risk_event_count(&self, agent: Option<&str>) -> Result<u64> {
+        self.count_kind(agent, EventKind::RiskEvent)
+    }
+
+    /// Number of suspected-hallucination flags.
+    pub fn hallucination_count(&self, agent: Option<&str>) -> Result<u64> {
+        self.count_kind(agent, EventKind::Hallucination)
+    }
+
+    /// Number of human interventions.
+    pub fn human_intervention_count(&self, agent: Option<&str>) -> Result<u64> {
+        self.count_kind(agent, EventKind::HumanIntervention)
+    }
+
+    /// Number of executions that waited on approval.
+    pub fn approval_waiting_count(&self, agent: Option<&str>) -> Result<u64> {
+        self.count_kind(agent, EventKind::ApprovalWait)
+    }
+
+    /// Number of executions blocked by the security gateway.
+    pub fn blocked_count(&self, agent: Option<&str>) -> Result<u64> {
+        self.count_kind(agent, EventKind::Blocked)
+    }
+
     /// Total number of events recorded (optionally scoped to one agent).
     pub fn event_count(&self, agent: Option<&str>) -> Result<u64> {
         let conn = self.conn.lock().expect("observability mutex poisoned");
