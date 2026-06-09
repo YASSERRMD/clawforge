@@ -54,3 +54,23 @@ stateDiagram-v2
     Blocked --> Deactivated: retire
     Deactivated --> [*]
 ```
+
+## Governance approval workflow
+
+```mermaid
+sequenceDiagram
+    participant Dev as Requester
+    participant GOV as Governance Engine
+    participant App as Approver
+    participant REG as Agent Registry
+
+    Dev->>GOV: submit(kind, subject, justification)
+    GOV-->>GOV: record "submitted" (Pending)
+    App->>GOV: approve / reject (reason required)
+    GOV-->>GOV: record decision + history
+    alt approved
+        GOV-->>REG: move agent → Active
+    else rejected
+        GOV-->>Dev: rejected with reason
+    end
+```
