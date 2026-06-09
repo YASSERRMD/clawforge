@@ -91,6 +91,14 @@ impl Marketplace {
         self.query(&format!("SELECT {COLUMNS} FROM marketplace_listings ORDER BY install_count DESC"), [])
     }
 
+    /// List listings in a given category.
+    pub fn list_by_category(&self, category: &str) -> Result<Vec<MarketplaceAgent>> {
+        self.query(
+            &format!("SELECT {COLUMNS} FROM marketplace_listings WHERE category = ?1 ORDER BY install_count DESC"),
+            params![category],
+        )
+    }
+
     /// Run a SELECT returning listings (internal helper).
     fn query<P: rusqlite::Params>(&self, sql: &str, params: P) -> Result<Vec<MarketplaceAgent>> {
         let conn = self.conn.lock().expect("marketplace mutex poisoned");
