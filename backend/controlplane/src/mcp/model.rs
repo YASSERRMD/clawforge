@@ -140,4 +140,10 @@ impl McpServer {
     pub fn tool_names(&self) -> Vec<&str> {
         self.tools_exposed.iter().map(|t| t.name.as_str()).collect()
     }
+
+    /// Whether this server warrants elevated governance scrutiny — either its
+    /// risk level mandates approval, or it exposes sensitive tools.
+    pub fn requires_governance_review(&self) -> bool {
+        self.risk_level.requires_approval() || self.sensitive_tool_count() > 0
+    }
 }

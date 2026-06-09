@@ -112,6 +112,20 @@ impl McpRegistry {
         Ok(out)
     }
 
+    /// List servers with a given lifecycle status (e.g. all `PendingApproval`).
+    pub fn list_by_status(&self, status: LifecycleStatus) -> Result<Vec<McpServer>> {
+        let conn = self.conn.lock().expect("mcp mutex poisoned");
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {COLUMNS} FROM mcp_servers WHERE status = ?1 ORDER BY created_at DESC"
+        ))?;
+        let rows = stmt.query_map(params![serde_json::to_string(&status)?], row_to_server)?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
     /// Approve a server, making it usable by agents (sets status `Active`).
     pub fn approve(&self, id: &str) -> Result<McpServer> {
         self.set_status(id, LifecycleStatus::Active)
