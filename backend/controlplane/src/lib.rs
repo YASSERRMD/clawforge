@@ -12,6 +12,8 @@
 //! `observability`, `gateway`, `mcp`, `marketplace`, `integrations`, and `compliance`.
 
 // Domain modules are wired in here as each phase lands.
+#[macro_use]
+pub mod logging;
 pub mod config;
 pub mod constants;
 
