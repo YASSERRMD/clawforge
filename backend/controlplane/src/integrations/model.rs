@@ -116,6 +116,16 @@ impl IntegrationPermission {
     }
 }
 
+/// An append-only audit entry for an integration's lifecycle.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IntegrationAuditEvent {
+    pub id: String,
+    pub integration_id: String,
+    /// `registered` | `approved` | `blocked`.
+    pub action: String,
+    pub at: i64,
+}
+
 /// A registered enterprise/government integration and its governance metadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntegrationProvider {

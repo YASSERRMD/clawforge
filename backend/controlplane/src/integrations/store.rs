@@ -7,11 +7,12 @@ use std::sync::Mutex;
 
 use chrono::Utc;
 use rusqlite::{params, Connection};
+use uuid::Uuid;
 
 use crate::constants::LifecycleStatus;
 use crate::error::{ControlPlaneError, Result};
 
-use super::model::{classify_risk, IntegrationProvider, NewIntegration};
+use super::model::{classify_risk, IntegrationAuditEvent, IntegrationProvider, NewIntegration};
 
 /// Persistent registry of enterprise integrations.
 pub struct IntegrationRegistry {
@@ -36,6 +37,14 @@ const SCHEMA: &str = "
     );
     CREATE INDEX IF NOT EXISTS idx_integ_kind ON integrations(kind);
     CREATE INDEX IF NOT EXISTS idx_integ_status ON integrations(status);
+
+    CREATE TABLE IF NOT EXISTS integration_audit (
+        id             TEXT PRIMARY KEY,
+        integration_id TEXT NOT NULL,
+        action         TEXT NOT NULL,
+        at             INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_integ_audit ON integration_audit(integration_id);
 ";
 
 const COLUMNS: &str = "id, name, kind, description, owner, department, endpoint, credential, \
@@ -92,8 +101,41 @@ impl IntegrationRegistry {
             integration.risk_level = classified;
         }
         self.upsert(&integration)?;
+        self.record_event(&integration.id, "registered")?;
         cp_info!("integration.register", id = %integration.id, name = %integration.name);
         Ok(integration)
+    }
+
+    /// Append an audit event for an integration.
+    fn record_event(&self, integration_id: &str, action: &str) -> Result<()> {
+        let conn = self.conn.lock().expect("integration mutex poisoned");
+        conn.execute(
+            "INSERT INTO integration_audit (id, integration_id, action, at) VALUES (?1,?2,?3,?4)",
+            params![Uuid::new_v4().to_string(), integration_id, action, Utc::now().timestamp()],
+        )?;
+        Ok(())
+    }
+
+    /// Full audit trail for an integration, oldest first.
+    pub fn audit_log(&self, integration_id: &str) -> Result<Vec<IntegrationAuditEvent>> {
+        let conn = self.conn.lock().expect("integration mutex poisoned");
+        let mut stmt = conn.prepare(
+            "SELECT id, integration_id, action, at FROM integration_audit
+             WHERE integration_id = ?1 ORDER BY at ASC",
+        )?;
+        let rows = stmt.query_map(params![integration_id], |row| {
+            Ok(IntegrationAuditEvent {
+                id: row.get(0)?,
+                integration_id: row.get(1)?,
+                action: row.get(2)?,
+                at: row.get(3)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
     }
 
     /// List all integrations, newest first.
@@ -137,6 +179,12 @@ impl IntegrationRegistry {
         integration.status = status;
         integration.updated_at = Utc::now().timestamp();
         self.upsert(&integration)?;
+        let action = match status {
+            LifecycleStatus::Active => "approved",
+            LifecycleStatus::Blocked => "blocked",
+            _ => "status_changed",
+        };
+        self.record_event(id, action)?;
         cp_info!("integration.status", id = %id, status = ?status);
         Ok(integration)
     }

@@ -5,7 +5,7 @@ pub mod placeholders;
 pub mod store;
 
 pub use model::{
-    classify_risk, CredentialRef, IntegrationKind, IntegrationPermission, IntegrationProvider,
-    NewIntegration,
+    classify_risk, CredentialRef, IntegrationAuditEvent, IntegrationKind, IntegrationPermission,
+    IntegrationProvider, NewIntegration,
 };
 pub use store::IntegrationRegistry;
