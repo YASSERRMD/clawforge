@@ -12,3 +12,6 @@
 //! `observability`, `gateway`, `mcp`, `marketplace`, `integrations`, and `compliance`.
 
 // Domain modules are wired in here as each phase lands.
+pub mod config;
+
+pub use config::ControlPlaneConfig;
