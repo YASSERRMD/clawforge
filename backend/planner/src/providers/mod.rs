@@ -3,6 +3,7 @@ pub mod ollama;
 pub mod mock;
 pub mod openai_compatible;
 pub mod anthropic;
+pub mod catalog;
 
 use std::collections::HashMap;
 use std::sync::Arc;
