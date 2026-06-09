@@ -47,6 +47,22 @@ pub fn gis(name: &str, owner: &str, department: &str, endpoint: &str, credential
     }
 }
 
+/// Placeholder for an SSO / identity-provider integration (OIDC/SAML, AD).
+/// Identity integrations are high risk by default.
+pub fn sso(name: &str, owner: &str, department: &str, endpoint: &str, credential: CredentialRef) -> NewIntegration {
+    NewIntegration {
+        name: name.into(),
+        kind: IntegrationKind::Sso,
+        description: "Single sign-on / identity provider integration".into(),
+        owner: owner.into(),
+        department: department.into(),
+        endpoint: endpoint.into(),
+        credential,
+        permissions: vec![IntegrationPermission::Connect, IntegrationPermission::Read],
+        risk_level: RiskLevel::High,
+    }
+}
+
 /// Placeholder for an outbound webhook integration.
 pub fn webhook(name: &str, owner: &str, department: &str, url: &str) -> NewIntegration {
     NewIntegration {
