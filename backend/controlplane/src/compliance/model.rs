@@ -27,6 +27,34 @@ impl PiiClassification {
     }
 }
 
+/// A collected piece of audit evidence — a tamper-evident record an
+/// investigator or auditor can rely on. The `content_hash` is a digest of the
+/// evidence payload; `signature` is a placeholder for a future digital
+/// signature over that hash.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuditEvidence {
+    pub id: String,
+    /// Subject the evidence concerns (agent id / department).
+    pub subject_id: String,
+    /// Short evidence kind (e.g. `decision`, `export`, `access`).
+    pub kind: String,
+    /// Human-readable summary of what happened.
+    pub summary: String,
+    /// Digest of the evidence payload (hex).
+    pub content_hash: String,
+    /// Digital signature over `content_hash` (placeholder; empty until signed).
+    #[serde(default)]
+    pub signature: String,
+    pub collected_at: i64,
+}
+
+impl AuditEvidence {
+    /// Whether this evidence has been digitally signed.
+    pub fn is_signed(&self) -> bool {
+        !self.signature.is_empty()
+    }
+}
+
 /// A single step in a multi-party approval chain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApprovalStep {
