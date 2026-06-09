@@ -2,4 +2,6 @@
 
 pub mod model;
 
-pub use model::{CredentialRef, IntegrationPermission};
+pub use model::{
+    CredentialRef, IntegrationKind, IntegrationPermission, IntegrationProvider, NewIntegration,
+};
