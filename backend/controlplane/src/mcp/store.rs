@@ -98,6 +98,18 @@ impl McpRegistry {
         Ok(server)
     }
 
+    /// List all registered MCP servers, newest first.
+    pub fn list(&self) -> Result<Vec<McpServer>> {
+        let conn = self.conn.lock().expect("mcp mutex poisoned");
+        let mut stmt = conn.prepare(&format!("SELECT {COLUMNS} FROM mcp_servers ORDER BY created_at DESC"))?;
+        let rows = stmt.query_map([], row_to_server)?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
     /// Fetch a server by id, or [`ControlPlaneError::NotFound`].
     pub fn get(&self, id: &str) -> Result<McpServer> {
         let conn = self.conn.lock().expect("mcp mutex poisoned");
