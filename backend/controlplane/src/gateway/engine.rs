@@ -36,6 +36,7 @@ impl SecurityGateway {
         self.check_agent_state(req, &mut denials);
         self.check_tool(req, &mut denials);
         self.check_mcp(req, &mut denials);
+        self.check_model(req, &mut denials);
 
         SecurityDecision::new(denials, 0, Utc::now().timestamp())
     }
@@ -54,6 +55,18 @@ impl SecurityGateway {
         if let Some(server) = &req.mcp_server {
             if !req.agent.mcp_servers_allowed.iter().any(|s| s == server) {
                 denials.push(format!("MCP server '{server}' is not allowed for this agent"));
+            }
+        }
+    }
+
+    /// The model, if specified, must match the agent's approved model.
+    fn check_model(&self, req: &ActionRequest, denials: &mut Vec<String>) {
+        if let Some(model) = &req.model {
+            if model != &req.agent.model_name {
+                denials.push(format!(
+                    "model '{model}' is not the agent's approved model '{}'",
+                    req.agent.model_name
+                ));
             }
         }
     }
