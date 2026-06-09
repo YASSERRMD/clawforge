@@ -48,6 +48,23 @@ layers an organisation needs to run agents safely at scale.
 > monitoring, auditing, and operating AI agents and MCP servers across government
 > and enterprise environments.
 
+## What is ClawForge? (and what it is not)
+
+<p align="center">
+  <img src="docs/assets/what-is-clawforge.png" alt="What ClawForge is and is not: it governs your AI agents, it does not replace them" width="100%">
+</p>
+
+ClawForge **governs** your AI agents; it does **not** replace them. Build agents
+with whatever framework, model, or MCP server you like. ClawForge sits above them
+as the control plane that decides which agents may exist, what they are allowed to
+do, who approved them, what they actually did, and whether that was compliant.
+
+- **It is:** a control plane for AI agents (registry, approval governance,
+  per-action security gateway, fleet observability and audit, MCP and integration
+  governance, compliance).
+- **It is not:** an agent framework or SDK, an LLM, a turnkey "AI dev team", or a
+  replacement for your runtime.
+
 ## Architecture
 
 <p align="center">
