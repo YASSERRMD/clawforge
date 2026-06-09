@@ -34,8 +34,18 @@ impl SecurityGateway {
         let mut denials: Vec<String> = Vec::new();
 
         self.check_agent_state(req, &mut denials);
+        self.check_tool(req, &mut denials);
 
         SecurityDecision::new(denials, 0, Utc::now().timestamp())
+    }
+
+    /// The tool, if any, must be on the agent's allow-list.
+    fn check_tool(&self, req: &ActionRequest, denials: &mut Vec<String>) {
+        if let Some(tool) = &req.tool {
+            if !req.agent.tools_allowed.iter().any(|t| t == tool) {
+                denials.push(format!("tool '{tool}' is not allowed for this agent"));
+            }
+        }
     }
 
     /// Base check: the agent must be active and not blocked/deactivated.
