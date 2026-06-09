@@ -233,4 +233,37 @@ mod tests {
         assert_eq!(mkt.get(&l.id).unwrap().name, "Permit Intake");
         assert!(!l.is_trusted()); // unverified + pending on publish
     }
+
+    #[test]
+    fn badges_make_listing_trusted() {
+        let mkt = Marketplace::in_memory().unwrap();
+        let l = mkt.publish(listing()).unwrap();
+        mkt.set_verification(&l.id, VerificationBadge::Verified).unwrap();
+        let l = mkt.set_compliance(&l.id, ComplianceBadge::Certified).unwrap();
+        assert!(l.is_trusted());
+    }
+
+    #[test]
+    fn filters_by_category_and_risk() {
+        let mkt = Marketplace::in_memory().unwrap();
+        mkt.publish(listing()).unwrap();
+        assert_eq!(mkt.list().unwrap().len(), 1);
+        assert_eq!(mkt.list_by_category("licensing").unwrap().len(), 1);
+        assert_eq!(mkt.list_by_category("nope").unwrap().len(), 0);
+        assert_eq!(mkt.list_by_risk(RiskLevel::Medium).unwrap().len(), 1);
+        assert_eq!(mkt.list_by_risk(RiskLevel::Critical).unwrap().len(), 0);
+    }
+
+    #[test]
+    fn install_creates_agent_and_counts() {
+        use crate::registry::AgentRegistry;
+        let mkt = Marketplace::in_memory().unwrap();
+        let reg = AgentRegistry::in_memory().unwrap();
+        let l = mkt.publish(listing()).unwrap();
+        let agent = mkt.install(&l.id, &reg, "Permit Bot A", "team-a", "Licensing").unwrap();
+        assert_eq!(agent.name, "Permit Bot A");
+        assert_eq!(agent.tools_allowed, vec!["search".to_string()]);
+        assert_eq!(reg.count().unwrap(), 1);
+        assert_eq!(mkt.get(&l.id).unwrap().install_count, 1);
+    }
 }
