@@ -2,4 +2,4 @@
 
 pub mod model;
 
-pub use model::AgentTemplate;
+pub use model::{AgentTemplate, ComplianceBadge, MarketplaceAgent, NewListing, VerificationBadge};
