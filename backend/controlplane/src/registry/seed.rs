@@ -15,7 +15,8 @@ pub fn sample_agents() -> Vec<NewAgent> {
     vec![
         NewAgent {
             name: "Permit Intake Assistant".into(),
-            description: "Triages building-permit applications for the Licensing department.".into(),
+            description: "Triages building-permit applications for the Licensing department."
+                .into(),
             owner: "licensing-platform".into(),
             department: "Licensing".into(),
             framework: "openclaw".into(),
@@ -41,7 +42,8 @@ pub fn sample_agents() -> Vec<NewAgent> {
         },
         NewAgent {
             name: "IT Ops Runbook Agent".into(),
-            description: "Executes approved remediation runbooks for the IT operations team.".into(),
+            description: "Executes approved remediation runbooks for the IT operations team."
+                .into(),
             owner: "it-ops".into(),
             department: "Information Technology".into(),
             framework: "openclaw".into(),

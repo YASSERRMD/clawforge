@@ -40,14 +40,18 @@ impl ObservabilityStore {
     pub fn open(path: &str) -> Result<Self> {
         let conn = Connection::open(path)?;
         conn.execute_batch(&format!("PRAGMA journal_mode=WAL;{SCHEMA}"))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Open an ephemeral in-memory store (used by tests).
     pub fn in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
         conn.execute_batch(SCHEMA)?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Record a new execution event, returning the persisted record.
@@ -125,7 +129,12 @@ impl ObservabilityStore {
     }
 
     /// Count events of a kind with a given outcome (optionally scoped).
-    fn count_kind_success(&self, agent: Option<&str>, kind: EventKind, success: bool) -> Result<u64> {
+    fn count_kind_success(
+        &self,
+        agent: Option<&str>,
+        kind: EventKind,
+        success: bool,
+    ) -> Result<u64> {
         let k = serde_json::to_string(&kind)?;
         let s = success as i64;
         let conn = self.conn.lock().expect("observability mutex poisoned");
@@ -169,8 +178,9 @@ impl ObservabilityStore {
         let kind = serde_json::to_string(&EventKind::Task)?;
         let conn = self.conn.lock().expect("observability mutex poisoned");
         let sql_all = format!("SELECT COALESCE({expr}, 0.0) FROM execution_events WHERE kind = ?1");
-        let sql_agent =
-            format!("SELECT COALESCE({expr}, 0.0) FROM execution_events WHERE kind = ?1 AND agent_id = ?2");
+        let sql_agent = format!(
+            "SELECT COALESCE({expr}, 0.0) FROM execution_events WHERE kind = ?1 AND agent_id = ?2"
+        );
         let v: f64 = match agent {
             Some(a) => conn.query_row(&sql_agent, params![kind, a], |r| r.get(0))?,
             None => conn.query_row(&sql_all, params![kind], |r| r.get(0))?,
@@ -272,7 +282,9 @@ mod tests {
     #[test]
     fn log_and_count_events() {
         let store = ObservabilityStore::in_memory().unwrap();
-        store.log_event(NewExecutionEvent::task("agent-1", true, 120, 0.02)).unwrap();
+        store
+            .log_event(NewExecutionEvent::task("agent-1", true, 120, 0.02))
+            .unwrap();
         store.log_event(tool("agent-2", true)).unwrap();
         assert_eq!(store.event_count(None).unwrap(), 2);
         assert_eq!(store.event_count(Some("agent-1")).unwrap(), 1);
@@ -281,9 +293,15 @@ mod tests {
     #[test]
     fn task_metrics_compute() {
         let store = ObservabilityStore::in_memory().unwrap();
-        store.log_event(NewExecutionEvent::task("a", true, 100, 0.10)).unwrap();
-        store.log_event(NewExecutionEvent::task("a", true, 300, 0.30)).unwrap();
-        store.log_event(NewExecutionEvent::task("a", false, 200, 0.20)).unwrap();
+        store
+            .log_event(NewExecutionEvent::task("a", true, 100, 0.10))
+            .unwrap();
+        store
+            .log_event(NewExecutionEvent::task("a", true, 300, 0.30))
+            .unwrap();
+        store
+            .log_event(NewExecutionEvent::task("a", false, 200, 0.20))
+            .unwrap();
         assert_eq!(store.task_count(Some("a")).unwrap(), 3);
         assert_eq!(store.successful_tasks(Some("a")).unwrap(), 2);
         assert_eq!(store.failed_tasks(Some("a")).unwrap(), 1);
@@ -316,8 +334,12 @@ mod tests {
     #[test]
     fn fleet_summary_aggregates_all_agents() {
         let store = ObservabilityStore::in_memory().unwrap();
-        store.log_event(NewExecutionEvent::task("a", true, 100, 0.1)).unwrap();
-        store.log_event(NewExecutionEvent::task("b", false, 100, 0.1)).unwrap();
+        store
+            .log_event(NewExecutionEvent::task("a", true, 100, 0.1))
+            .unwrap();
+        store
+            .log_event(NewExecutionEvent::task("b", false, 100, 0.1))
+            .unwrap();
         let fleet = store.summary(None).unwrap();
         assert_eq!(fleet.agent_id, "*");
         assert_eq!(fleet.task_count, 2);

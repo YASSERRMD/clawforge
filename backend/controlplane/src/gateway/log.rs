@@ -46,19 +46,27 @@ impl BlockedExecutionLog {
     pub fn open(path: &str) -> Result<Self> {
         let conn = Connection::open(path)?;
         conn.execute_batch(&format!("PRAGMA journal_mode=WAL;{SCHEMA}"))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Open an ephemeral in-memory log (used by tests).
     pub fn in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
         conn.execute_batch(SCHEMA)?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Record a denied decision. No-op (returns `None`) if the decision was
     /// actually allowed, so callers can pass every decision unconditionally.
-    pub fn record(&self, agent_id: &str, decision: &SecurityDecision) -> Result<Option<BlockedExecution>> {
+    pub fn record(
+        &self,
+        agent_id: &str,
+        decision: &SecurityDecision,
+    ) -> Result<Option<BlockedExecution>> {
         if decision.allowed {
             return Ok(None);
         }
@@ -73,7 +81,13 @@ impl BlockedExecutionLog {
         conn.execute(
             "INSERT INTO blocked_executions (id, agent_id, reasons, risk_score, at)
              VALUES (?1,?2,?3,?4,?5)",
-            params![entry.id, entry.agent_id, entry.reasons, entry.risk_score, entry.at],
+            params![
+                entry.id,
+                entry.agent_id,
+                entry.reasons,
+                entry.risk_score,
+                entry.at
+            ],
         )?;
         cp_blocked!("gateway.blocked", agent_id = %entry.agent_id, reasons = %entry.reasons);
         Ok(Some(entry))

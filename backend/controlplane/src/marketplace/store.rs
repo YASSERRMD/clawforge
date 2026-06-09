@@ -58,8 +58,9 @@ fn row_to_listing(row: &rusqlite::Row) -> rusqlite::Result<MarketplaceAgent> {
 }
 
 fn de<T: serde::de::DeserializeOwned>(s: &str, col: usize) -> rusqlite::Result<T> {
-    serde_json::from_str(s)
-        .map_err(|e| rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e)))
+    serde_json::from_str(s).map_err(|e| {
+        rusqlite::Error::FromSqlConversionFailure(col, rusqlite::types::Type::Text, Box::new(e))
+    })
 }
 
 impl Marketplace {
@@ -67,20 +68,26 @@ impl Marketplace {
     pub fn open(path: &str) -> Result<Self> {
         let conn = Connection::open(path)?;
         conn.execute_batch(&format!("PRAGMA journal_mode=WAL;{SCHEMA}"))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Open an ephemeral in-memory marketplace (used by tests).
     pub fn in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
         conn.execute_batch(SCHEMA)?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Publish a new listing to the marketplace.
     pub fn publish(&self, input: NewListing) -> Result<MarketplaceAgent> {
         if input.name.trim().is_empty() {
-            return Err(ControlPlaneError::validation("listing name must not be empty"));
+            return Err(ControlPlaneError::validation(
+                "listing name must not be empty",
+            ));
         }
         let listing = MarketplaceAgent::from_new(input);
         self.upsert(&listing)?;
@@ -90,7 +97,10 @@ impl Marketplace {
 
     /// List all listings, most-installed first.
     pub fn list(&self) -> Result<Vec<MarketplaceAgent>> {
-        self.query(&format!("SELECT {COLUMNS} FROM marketplace_listings ORDER BY install_count DESC"), [])
+        self.query(
+            &format!("SELECT {COLUMNS} FROM marketplace_listings ORDER BY install_count DESC"),
+            [],
+        )
     }
 
     /// List listings in a given category.
@@ -132,9 +142,10 @@ impl Marketplace {
         department: &str,
     ) -> Result<AgentRecord> {
         let mut listing = self.get(listing_id)?;
-        let new_agent = listing
-            .template
-            .to_new_agent(name, listing.description.clone(), owner, department);
+        let new_agent =
+            listing
+                .template
+                .to_new_agent(name, listing.description.clone(), owner, department);
         let agent = registry.create(new_agent)?;
         listing.install_count += 1;
         self.upsert(&listing)?;
@@ -143,7 +154,11 @@ impl Marketplace {
     }
 
     /// Set the verification badge on a listing (platform-team action).
-    pub fn set_verification(&self, listing_id: &str, badge: VerificationBadge) -> Result<MarketplaceAgent> {
+    pub fn set_verification(
+        &self,
+        listing_id: &str,
+        badge: VerificationBadge,
+    ) -> Result<MarketplaceAgent> {
         let mut listing = self.get(listing_id)?;
         listing.verification = badge;
         self.upsert(&listing)?;
@@ -152,7 +167,11 @@ impl Marketplace {
     }
 
     /// Set the compliance badge on a listing (compliance-team action).
-    pub fn set_compliance(&self, listing_id: &str, badge: ComplianceBadge) -> Result<MarketplaceAgent> {
+    pub fn set_compliance(
+        &self,
+        listing_id: &str,
+        badge: ComplianceBadge,
+    ) -> Result<MarketplaceAgent> {
         let mut listing = self.get(listing_id)?;
         listing.compliance = badge;
         self.upsert(&listing)?;
@@ -238,8 +257,11 @@ mod tests {
     fn badges_make_listing_trusted() {
         let mkt = Marketplace::in_memory().unwrap();
         let l = mkt.publish(listing()).unwrap();
-        mkt.set_verification(&l.id, VerificationBadge::Verified).unwrap();
-        let l = mkt.set_compliance(&l.id, ComplianceBadge::Certified).unwrap();
+        mkt.set_verification(&l.id, VerificationBadge::Verified)
+            .unwrap();
+        let l = mkt
+            .set_compliance(&l.id, ComplianceBadge::Certified)
+            .unwrap();
         assert!(l.is_trusted());
     }
 
@@ -260,7 +282,9 @@ mod tests {
         let mkt = Marketplace::in_memory().unwrap();
         let reg = AgentRegistry::in_memory().unwrap();
         let l = mkt.publish(listing()).unwrap();
-        let agent = mkt.install(&l.id, &reg, "Permit Bot A", "team-a", "Licensing").unwrap();
+        let agent = mkt
+            .install(&l.id, &reg, "Permit Bot A", "team-a", "Licensing")
+            .unwrap();
         assert_eq!(agent.name, "Permit Bot A");
         assert_eq!(agent.tools_allowed, vec!["search".to_string()]);
         assert_eq!(reg.count().unwrap(), 1);

@@ -59,7 +59,9 @@ impl SecurityGateway {
     fn check_mcp(&self, req: &ActionRequest, denials: &mut Vec<String>) {
         if let Some(server) = &req.mcp_server {
             if !req.agent.mcp_servers_allowed.iter().any(|s| s == server) {
-                denials.push(format!("MCP server '{server}' is not allowed for this agent"));
+                denials.push(format!(
+                    "MCP server '{server}' is not allowed for this agent"
+                ));
             }
         }
     }
@@ -263,7 +265,10 @@ mod tests {
         req.model = Some("gpt-4".into());
         let d = gw.evaluate(&req);
         assert!(!d.allowed);
-        assert!(d.denials.iter().any(|r| r.contains("MCP server 'rogue-mcp'")));
+        assert!(d
+            .denials
+            .iter()
+            .any(|r| r.contains("MCP server 'rogue-mcp'")));
         assert!(d.denials.iter().any(|r| r.contains("model 'gpt-4'")));
     }
 
@@ -274,7 +279,10 @@ mod tests {
         req.data_access_level = DataAccessLevel::Restricted; // agent clearance is Internal
         let d = gw.evaluate(&req);
         assert!(!d.allowed);
-        assert!(d.denials.iter().any(|r| r.contains("exceeds agent clearance")));
+        assert!(d
+            .denials
+            .iter()
+            .any(|r| r.contains("exceeds agent clearance")));
     }
 
     #[test]
@@ -306,7 +314,10 @@ mod tests {
         let mut req = ActionRequest::for_agent(a);
         req.tool = Some("search".into());
         let d = gw.evaluate(&req);
-        assert!(d.denials.iter().any(|r| r.contains("human approval required")));
+        assert!(d
+            .denials
+            .iter()
+            .any(|r| r.contains("human approval required")));
     }
 
     #[test]

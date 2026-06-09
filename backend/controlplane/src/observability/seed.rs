@@ -12,7 +12,12 @@ use super::store::ObservabilityStore;
 pub fn seed_for_agent(store: &ObservabilityStore, agent_id: &str) -> Result<()> {
     // Tasks: mostly successful, a couple failed.
     for i in 0..8 {
-        store.log_event(NewExecutionEvent::task(agent_id, true, 100 + i * 10, 0.01 + i as f64 * 0.002))?;
+        store.log_event(NewExecutionEvent::task(
+            agent_id,
+            true,
+            100 + i * 10,
+            0.01 + i as f64 * 0.002,
+        ))?;
     }
     store.log_event(NewExecutionEvent::task(agent_id, false, 450, 0.03))?;
     store.log_event(NewExecutionEvent::task(agent_id, false, 500, 0.04))?;
@@ -24,7 +29,12 @@ pub fn seed_for_agent(store: &ObservabilityStore, agent_id: &str) -> Result<()> 
     for _ in 0..3 {
         store.log_event(call(agent_id, EventKind::McpCall, "records-mcp", true))?;
     }
-    store.log_event(call(agent_id, EventKind::ModelCall, "claude-opus-4-8", true))?;
+    store.log_event(call(
+        agent_id,
+        EventKind::ModelCall,
+        "claude-opus-4-8",
+        true,
+    ))?;
 
     // Governance / risk signals.
     store.log_event(event(agent_id, EventKind::RiskEvent))?;

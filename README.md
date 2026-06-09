@@ -34,6 +34,31 @@ agents safely at scale.
 See [docs/product-positioning.md](docs/product-positioning.md) and
 [docs/architecture.md](docs/architecture.md) for the full picture.
 
+## The Control Plane
+
+The `clawforge-controlplane` crate adds the layers an organisation needs to run
+agents safely at scale. Each is a self-contained, SQLite-backed, fully tested
+domain module:
+
+| Capability | What it does | Docs |
+|------------|--------------|------|
+| **Agent Registry** | Single source of truth for every agent (owner, tools, MCP, data access, risk, lifecycle) | [registry.md](docs/registry.md) |
+| **Governance Engine** | Human approval workflow with department ownership, change history, and audit | [governance.md](docs/governance.md) |
+| **Observability** | Execution events → task/cost/latency/failure/risk metrics, per-agent and fleet-wide | [observability.md](docs/observability.md) |
+| **Security Gateway** | Pre-execution checks on every action (tool/MCP/model/data/budget/approval) + risk score | [security-gateway.md](docs/security-gateway.md) |
+| **MCP Governance** | Registry, approval, health, and usage tracking for MCP servers | [mcp-governance.md](docs/mcp-governance.md) |
+| **Agent Marketplace** | Verified, reusable internal agent templates with compliance badges | [marketplace.md](docs/marketplace.md) |
+| **Enterprise Integrations** | Governed connectors (DBs, SSO, GIS, ITSM) — credentials referenced, never stored | [enterprise-integrations.md](docs/enterprise-integrations.md) |
+| **Government Compliance** | PII classification, retention, approval chains, audit evidence, reporting (UAE PDPL-aware) | [government-compliance.md](docs/government-compliance.md) |
+
+See [docs/architecture.md](docs/architecture.md) for how these fit together, and
+[docs/use-cases.md](docs/use-cases.md) for end-to-end government and enterprise
+walkthroughs.
+
+> **ClawForge is an enterprise-grade AI agent control plane for governing,
+> securing, monitoring, auditing, and operating AI agents and MCP servers across
+> government and enterprise environments.**
+
 ## Install & Quick Start
 
 Requires **Rust ≥ 1.80** and **Node ≥ 20** (for frontend UI).

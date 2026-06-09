@@ -8,7 +8,9 @@
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-use super::model::{ApprovalChain, AuditEvidence, CompliancePolicy, ExportControl, PiiClassification};
+use super::model::{
+    ApprovalChain, AuditEvidence, CompliancePolicy, ExportControl, PiiClassification,
+};
 
 /// A point-in-time compliance assessment for a single subject.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,7 +55,10 @@ impl ComplianceReport {
         if !approval_complete {
             findings.push("approval chain is incomplete".into());
         }
-        if matches!(policy.export_control, ExportControl::Prohibited) && signed == 0 && !evidence.is_empty() {
+        if matches!(policy.export_control, ExportControl::Prohibited)
+            && signed == 0
+            && !evidence.is_empty()
+        {
             findings.push("export-prohibited data lacks signed evidence".into());
         }
 
@@ -102,7 +107,11 @@ impl DepartmentComplianceSummary {
         let under_investigation = reports.iter().filter(|r| r.investigation_mode).count();
         let mut findings: Vec<String> = reports
             .iter()
-            .flat_map(|r| r.findings.iter().map(|f| format!("{}: {}", r.subject_id, f)))
+            .flat_map(|r| {
+                r.findings
+                    .iter()
+                    .map(|f| format!("{}: {}", r.subject_id, f))
+            })
             .collect();
         findings.sort();
         DepartmentComplianceSummary {
@@ -143,7 +152,10 @@ mod tests {
         policy.pii_classification = PiiClassification::Pii;
         let report = ComplianceReport::generate(&policy, &[], None);
         assert!(!report.is_compliant());
-        assert!(report.findings.iter().any(|f| f.contains("no audit evidence")));
+        assert!(report
+            .findings
+            .iter()
+            .any(|f| f.contains("no audit evidence")));
     }
 
     #[test]
