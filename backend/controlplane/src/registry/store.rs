@@ -7,9 +7,12 @@
 
 use std::sync::Mutex;
 
-use rusqlite::Connection;
+use rusqlite::{params, Connection};
 
 use crate::error::Result;
+
+use super::model::{AgentRecord, NewAgent};
+use super::validation::validate_new_agent;
 
 /// Persistent store for [`AgentRecord`](super::model::AgentRecord)s.
 pub struct AgentRegistry {
@@ -52,6 +55,40 @@ impl AgentRegistry {
         let conn = Connection::open_in_memory()?;
         conn.execute_batch(SCHEMA)?;
         Ok(Self { conn: Mutex::new(conn) })
+    }
+
+    /// Validate and register a new agent, returning the materialised record.
+    pub fn create(&self, input: NewAgent) -> Result<AgentRecord> {
+        validate_new_agent(&input)?;
+        let record = AgentRecord::from_new(input);
+        let conn = self.conn.lock().expect("registry mutex poisoned");
+        conn.execute(
+            "INSERT INTO agents (
+                id, name, description, owner, department, framework,
+                model_provider, model_name, tools_allowed, mcp_servers_allowed,
+                data_access_level, risk_level, status, version, created_at, updated_at
+             ) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16)",
+            params![
+                record.id,
+                record.name,
+                record.description,
+                record.owner,
+                record.department,
+                record.framework,
+                record.model_provider,
+                record.model_name,
+                serde_json::to_string(&record.tools_allowed)?,
+                serde_json::to_string(&record.mcp_servers_allowed)?,
+                serde_json::to_string(&record.data_access_level)?,
+                serde_json::to_string(&record.risk_level)?,
+                serde_json::to_string(&record.status)?,
+                record.version,
+                record.created_at,
+                record.updated_at,
+            ],
+        )?;
+        cp_info!("registry.agent.create", agent_id = %record.id, name = %record.name);
+        Ok(record)
     }
 
     /// Total number of registered agents.
