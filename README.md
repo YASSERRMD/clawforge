@@ -1,7 +1,7 @@
-# 🦞 ClawForge — Personal AI Assistant Runtime
+# 🦞 ClawForge — Enterprise & Government AI Agent Control Plane
 
 <p align="center">
-  <strong>The experimental, blazingly fast Rust implementation of the OpenClaw standard.</strong>
+  <strong>The control plane for governing, securing, observing, auditing, and operating AI agents and MCP servers.</strong>
 </p>
 
 <p align="center">
@@ -9,9 +9,30 @@
   <img src="https://img.shields.io/badge/Rust-1.80+-orange.svg?style=for-the-badge" alt="Rust Version">
 </p>
 
-**ClawForge** is a _personal AI assistant runtime_ you run on your own devices, achieving identical topology to the [OpenClaw](https://openclaw.ai) reference implementation but built entirely in Rust for maximum performance, multi-threading, and memory safety.
+> **ClawForge = Kubernetes + ServiceNow + Splunk for AI Agents.**
 
-It orchestrates autonomous agents over a central WebSocket control plane (Gateway) to interact across channels (WhatsApp, Telegram, Discord), perform actions via Tools (`browser.control`, Docker sandboxing), and manage memory.
+**ClawForge is not another agent framework.** It is the **control plane** for managing,
+governing, securing, observing, auditing, and operating AI agents, MCP servers,
+workflows, tools, models, and enterprise integrations — built for government entities,
+municipalities, and enterprise IT, security, and AI platform teams.
+
+| Product | Role |
+|---------|------|
+| **Hermes** | Learns |
+| **OpenClaw** | Executes |
+| **Paperclip** | AI company OS |
+| **ClawForge** | **Enterprise / Government Agent Control Plane** |
+
+Underneath the control plane sits a high-performance, local-first **agent runtime**
+written entirely in Rust (a Rust implementation of the [OpenClaw](https://openclaw.ai)
+topology). The runtime orchestrates autonomous agents over a central WebSocket Gateway,
+across channels (WhatsApp, Telegram, Discord, Slack), with tools, sandboxing, and memory.
+The control plane (`clawforge-controlplane`) wraps that runtime with the registry,
+governance, security, observability, and compliance layers an organisation needs to run
+agents safely at scale.
+
+See [docs/product-positioning.md](docs/product-positioning.md) and
+[docs/architecture.md](docs/architecture.md) for the full picture.
 
 ## Install & Quick Start
 
