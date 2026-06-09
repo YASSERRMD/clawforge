@@ -9,6 +9,29 @@ use crate::constants::RiskLevel;
 
 use super::model::{CredentialRef, IntegrationKind, IntegrationPermission, NewIntegration};
 
+/// Placeholder for a database integration (Oracle, SQL Server, Postgres,
+/// MongoDB, …). Defaults to read-only `Connect`+`Read` at high risk.
+pub fn database(
+    name: &str,
+    owner: &str,
+    department: &str,
+    kind: IntegrationKind,
+    endpoint: &str,
+    credential: CredentialRef,
+) -> NewIntegration {
+    NewIntegration {
+        name: name.into(),
+        kind,
+        description: "Database integration".into(),
+        owner: owner.into(),
+        department: department.into(),
+        endpoint: endpoint.into(),
+        credential,
+        permissions: vec![IntegrationPermission::Connect, IntegrationPermission::Read],
+        risk_level: RiskLevel::High,
+    }
+}
+
 /// Placeholder for an outbound webhook integration.
 pub fn webhook(name: &str, owner: &str, department: &str, url: &str) -> NewIntegration {
     NewIntegration {
