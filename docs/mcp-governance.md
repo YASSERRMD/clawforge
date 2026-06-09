@@ -3,7 +3,7 @@
 ![MCP Governance](assets/mcp-governance.png)
 
 The MCP registry (`clawforge_controlplane::mcp`) governs the Model Context
-Protocol servers an organisation exposes to its agents — the same discipline the
+Protocol servers an organisation exposes to its agents - the same discipline the
 agent registry applies to agents. The Security Gateway consults agent
 allow-lists; this registry is the source of truth for *which MCP servers exist,
 who owns them, and whether they are approved*.
@@ -27,8 +27,8 @@ who owns them, and whether they are approved*.
 
 A server is registered in `pending_approval` and is **not usable** until
 `approve`d (status `active`). `block` moves it to `blocked`. A server that
-`requires_governance_review()` — high/critical risk *or* exposing sensitive
-tools (network/fs/write/exec/pii) — should not be approved without scrutiny.
+`requires_governance_review()` - high/critical risk *or* exposing sensitive
+tools (network/fs/write/exec/pii) - should not be approved without scrutiny.
 
 ## API
 

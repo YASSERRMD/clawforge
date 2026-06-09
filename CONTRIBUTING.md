@@ -6,12 +6,12 @@ workspace.
 
 ## Repository layout
 
-- `backend/*` — Rust workspace crates (the agent runtime).
-- `backend/controlplane` — the **control plane** crate (registry, governance,
+- `backend/*` - Rust workspace crates (the agent runtime).
+- `backend/controlplane` - the **control plane** crate (registry, governance,
   observability, security gateway, MCP governance, marketplace, integrations,
   compliance).
-- `frontend/` — React dashboard.
-- `docs/` — architecture and per-domain documentation.
+- `frontend/` - React dashboard.
+- `docs/` - architecture and per-domain documentation.
 
 ## Building & testing
 
@@ -45,7 +45,7 @@ Run tests **before** opening a pull request.
 
 ## Commit & PR workflow
 
-- Keep commits **atomic** — one logical change per commit, with a clear message.
+- Keep commits **atomic** - one logical change per commit, with a clear message.
 - Do not combine unrelated changes.
 - Branch per unit of work; never commit directly to `main`. Open a pull request
   and merge through GitHub.

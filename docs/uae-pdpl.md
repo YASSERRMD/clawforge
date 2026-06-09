@@ -1,4 +1,4 @@
-# UAE PDPL — Awareness Note
+# UAE PDPL - Awareness Note
 
 > **Disclaimer:** This note is an engineering aid, not legal advice. It
 > summarises how ClawForge's compliance pack *maps to* commonly-cited UAE

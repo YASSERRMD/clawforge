@@ -4,12 +4,12 @@ Index of the control-plane documentation.
 
 ## Start here
 
-- [Product positioning](product-positioning.md) — what ClawForge is (and isn't).
-- [Architecture](architecture.md) — the two layers and how they relate.
-- [Diagrams](diagrams.md) — architecture, lifecycle, governance, and MCP flows.
-- [Installation guide](installation.md) — prerequisites, config, build & test.
-- [Model providers](model-providers.md) — every supported provider and how to enable it.
-- [Demo](demo.md) — runnable end-to-end walkthrough.
+- [Product positioning](product-positioning.md) - what ClawForge is (and isn't).
+- [Architecture](architecture.md) - the two layers and how they relate.
+- [Diagrams](diagrams.md) - architecture, lifecycle, governance, and MCP flows.
+- [Installation guide](installation.md) - prerequisites, config, build & test.
+- [Model providers](model-providers.md) - every supported provider and how to enable it.
+- [Demo](demo.md) - runnable end-to-end walkthrough.
 
 ## Capabilities
 

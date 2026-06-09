@@ -1,2 +1,2 @@
 # Orchestration
-> Phase 5: Docker, Kubernetes, Terraform — coming later.
+> Phase 5: Docker, Kubernetes, Terraform - coming later.

@@ -18,7 +18,7 @@ PDPL by default) without hard-coding any single jurisdiction. See
 | `framework` | e.g. `UAE-PDPL` |
 | `pii_classification` | `non_pii` / `pii` / `sensitive_pii` |
 | `data_retention_days` | retention window; `0` = indefinite |
-| `investigation_mode` | legal hold — suspends deletion, mandates evidence |
+| `investigation_mode` | legal hold - suspends deletion, mandates evidence |
 | `export_control` | `unrestricted` / `restricted` / `prohibited` |
 
 `is_past_retention(age_days)` honours both indefinite retention and an active
@@ -68,4 +68,4 @@ incomplete approval chains, and export-prohibited data lacking signed evidence.
 Reports are **pure functions** of data assembled from the other control-plane
 stores (registry, governance, gateway, integrations). Nothing is recomputed
 from a separate source of truth, so a report is always reproducible from the
-evidence on file — exactly what an auditor or investigator needs.
+evidence on file - exactly what an auditor or investigator needs.

@@ -36,7 +36,7 @@ flowchart TB
 ## Agent lifecycle
 
 The registry state machine. An agent can only become operational by passing
-through approval — a direct `Draft → Active` jump is rejected.
+through approval - a direct `Draft → Active` jump is rejected.
 
 ```mermaid
 stateDiagram-v2

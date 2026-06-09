@@ -4,7 +4,7 @@
 
 The marketplace (`clawforge_controlplane::marketplace`) is a **verified, internal
 catalogue of reusable agent templates**. Teams publish proven agent blueprints;
-other teams install them as governed, registry-tracked agents — without
+other teams install them as governed, registry-tracked agents - without
 re-engineering or re-reviewing from scratch.
 
 ## Listings
@@ -21,7 +21,7 @@ A `MarketplaceAgent` listing carries identity (`name`, `description`,
 | `compliance` | `pending` → `compliant` → `certified` | compliance team |
 
 `is_trusted()` is true only when a listing is **verified** *and* at least
-**compliant** — the bar for surfacing it as install-ready.
+**compliant** - the bar for surfacing it as install-ready.
 
 ## Templates
 
@@ -61,7 +61,7 @@ let agent = mkt.install(&listing.id, &reg, "Permit Bot A", "team-a", "Licensing"
 `install` is the bridge to the **Agent Registry**: it stamps out a `Draft`
 agent from the template, which then flows through the normal governance and
 security lifecycle. The marketplace itself stays decoupled from agent
-persistence — it is handed the registry to install into.
+persistence - it is handed the registry to install into.
 
 ## Seed data
 

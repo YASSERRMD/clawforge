@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- **Rust ≥ 1.80** (workspace edition 2021) — install via [rustup](https://rustup.rs).
-- **Node ≥ 20** — only needed for the React dashboard in `frontend/`.
+- **Rust ≥ 1.80** (workspace edition 2021) - install via [rustup](https://rustup.rs).
+- **Node ≥ 20** - only needed for the React dashboard in `frontend/`.
 - A C toolchain (for the bundled SQLite used by `rusqlite`).
 
 ## Get the code
@@ -17,7 +17,7 @@ cd clawforge
 
 ```bash
 cp .env.example .env
-# edit .env — at minimum set OPENROUTER_API_KEY for the runtime.
+# edit .env - at minimum set OPENROUTER_API_KEY for the runtime.
 ```
 
 Control-plane settings (all optional, sensible local-first defaults):

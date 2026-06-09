@@ -167,6 +167,6 @@ Common property formats for database items:
 ## Notes
 
 - Page/database IDs are UUIDs (with or without dashes)
-- The API cannot set database view filters — that's UI-only
+- The API cannot set database view filters - that's UI-only
 - Rate limit: ~3 requests/second average
 - Use `is_inline: true` when creating data sources to embed them in pages

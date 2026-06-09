@@ -3,17 +3,17 @@
 ![Security Gateway](assets/security-gateway.png)
 
 The Security Gateway (`clawforge_controlplane::gateway`) is the enforcement
-point: **every agent action is checked before execution**. It is deny-by-reason
-— an action is allowed only if no check objects.
+point: **every agent action is checked before execution**. It is deny-by-reason:
+an action is allowed only if no check objects.
 
 ## Inputs
 
-- **`SecurityPolicy`** — the capabilities and limits in force: human-approval
+- **`SecurityPolicy`** - the capabilities and limits in force: human-approval
   requirement, external network / file export / database write / PII toggles, a
   data-sensitivity ceiling, and a budget limit. `SecurityPolicy::default()` is a
   conservative government-grade posture; `::permissive()` suits trusted internal
   automation.
-- **`ActionRequest`** — the agent's current registry record plus the specifics
+- **`ActionRequest`** - the agent's current registry record plus the specifics
   of the attempted action (tool, MCP server, model, data sensitivity, estimated
   cost, spend so far, and capability flags).
 

@@ -5,7 +5,7 @@
 ClawForge governs *connections* to enterprise and government systems. The
 integration registry (`clawforge_controlplane::integrations`) tracks every
 connector, who owns it, what it is allowed to do, where its credentials live,
-and whether it is approved — **without ever storing a secret**.
+and whether it is approved - **without ever storing a secret**.
 
 ## Categories (`IntegrationKind`)
 
@@ -15,7 +15,7 @@ Active Directory, SSO, API Gateway, Email, Webhook.
 ## Credentials are referenced, never stored
 
 `CredentialRef` records *where* a secret lives (`vault` / `env` / `sso` /
-`keychain` / `none`) and the lookup `key` — never the secret material itself.
+`keychain` / `none`) and the lookup `key` - never the secret material itself.
 This keeps the control plane out of scope for secret storage while still giving
 governance a complete picture of what an integration can reach.
 
@@ -32,7 +32,7 @@ Granting `write`, `delete`, or `admin` is *elevated*. `classify_risk(kind,
 permissions)` computes effective risk: the higher of the category baseline
 (identity stores and SSO are `critical`; primary databases are `high`) and a
 `high` floor implied by any elevated permission. Registration escalates an
-integration's risk to this baseline — it never silently downgrades an explicit
+integration's risk to this baseline - it never silently downgrades an explicit
 level.
 
 ## API

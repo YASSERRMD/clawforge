@@ -26,7 +26,7 @@ evaluators can judge it accurately.
 
 ## Data & scale
 
-- **Single-node SQLite.** Each store uses a local SQLite database — excellent
+- **Single-node SQLite.** Each store uses a local SQLite database - excellent
   for local-first and small deployments, but not a clustered/HA datastore.
 - **No multi-tenancy.** There is no tenant isolation layer yet; an
   `organization` config field exists but is not enforced across stores.
@@ -39,6 +39,6 @@ evaluators can judge it accurately.
 - **Retention is advisory.** `is_past_retention` reports when data is past due;
   it does not yet delete or archive anything automatically.
 
-None of these are architectural dead-ends — they are the difference between a
+None of these are architectural dead-ends - they are the difference between a
 solid, tested foundation and a fully operationalised platform, and each is
 tracked on the [roadmap](roadmap.md).

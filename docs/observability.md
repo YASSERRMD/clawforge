@@ -17,18 +17,18 @@ Every observable action is one `ExecutionEvent` with an `EventKind`:
 | `tool_call` | name, success | tool failure rate |
 | `model_call` | name, success | model failure rate |
 | `mcp_call` | name, success | MCP call count |
-| `risk_event` | — | risk events |
-| `hallucination` | — | hallucination flag count |
-| `human_intervention` | — | intervention count |
-| `approval_wait` | — | approval waiting count |
-| `blocked` | — | blocked executions |
+| `risk_event` | - | risk events |
+| `hallucination` | - | hallucination flag count |
+| `human_intervention` | - | intervention count |
+| `approval_wait` | - | approval waiting count |
+| `blocked` | - | blocked executions |
 
 ## Metrics (`AgentMetrics`)
 
 `task_count`, `successful_tasks`, `failed_tasks`, `tool_failure_rate`,
 `model_failure_rate`, `average_latency_ms`, `average_cost`, `total_cost`,
 `human_intervention_count`, `approval_waiting_count`, `blocked_executions`,
-`risk_events`, `hallucination_flag_count`, `mcp_call_count` — plus a derived
+`risk_events`, `hallucination_flag_count`, `mcp_call_count` - plus a derived
 `success_rate()`.
 
 ## API
