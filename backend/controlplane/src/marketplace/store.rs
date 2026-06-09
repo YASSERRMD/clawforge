@@ -12,7 +12,7 @@ use crate::constants::RiskLevel;
 use crate::error::{ControlPlaneError, Result};
 use crate::registry::{AgentRecord, AgentRegistry};
 
-use super::model::{MarketplaceAgent, NewListing, VerificationBadge};
+use super::model::{ComplianceBadge, MarketplaceAgent, NewListing, VerificationBadge};
 
 /// Store of published marketplace listings.
 pub struct Marketplace {
@@ -148,6 +148,15 @@ impl Marketplace {
         listing.verification = badge;
         self.upsert(&listing)?;
         cp_info!("marketplace.verify", listing_id = %listing_id, badge = ?badge);
+        Ok(listing)
+    }
+
+    /// Set the compliance badge on a listing (compliance-team action).
+    pub fn set_compliance(&self, listing_id: &str, badge: ComplianceBadge) -> Result<MarketplaceAgent> {
+        let mut listing = self.get(listing_id)?;
+        listing.compliance = badge;
+        self.upsert(&listing)?;
+        cp_info!("marketplace.compliance", listing_id = %listing_id, badge = ?badge);
         Ok(listing)
     }
 
