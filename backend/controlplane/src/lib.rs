@@ -17,6 +17,7 @@ pub mod logging;
 pub mod config;
 pub mod constants;
 pub mod error;
+pub mod registry;
 
 pub use config::ControlPlaneConfig;
 pub use constants::{DataAccessLevel, LifecycleStatus, RiskLevel};
