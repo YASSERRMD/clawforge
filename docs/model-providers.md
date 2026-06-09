@@ -48,7 +48,8 @@ cargo run -p clawforge-cli -- serve
 |----|----------|--------|------|---------|
 | `deepseek` | DeepSeek | China | OpenAI-compatible | `DEEPSEEK_API_KEY` |
 | `qwen` | Alibaba Qwen (DashScope) | China | OpenAI-compatible | `DASHSCOPE_API_KEY` |
-| `zhipu` | Zhipu AI (GLM) | China | OpenAI-compatible | `ZHIPU_API_KEY` |
+| `zhipu` | Zhipu AI (GLM, mainland BigModel) | China | OpenAI-compatible | `ZHIPU_API_KEY` |
+| `zai` | Z.AI (Zhipu international, GLM) | China | OpenAI-compatible | `ZAI_API_KEY` |
 | `moonshot` | Moonshot AI (Kimi) | China | OpenAI-compatible | `MOONSHOT_API_KEY` |
 | `baidu` | Baidu ERNIE (Qianfan) | China | OpenAI-compatible | `QIANFAN_API_KEY` |
 | `minimax` | MiniMax | China | OpenAI-compatible | `MINIMAX_API_KEY` |
