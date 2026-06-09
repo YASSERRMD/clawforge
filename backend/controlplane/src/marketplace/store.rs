@@ -10,6 +10,7 @@ use rusqlite::{params, Connection};
 
 use crate::constants::RiskLevel;
 use crate::error::{ControlPlaneError, Result};
+use crate::registry::{AgentRecord, AgentRegistry};
 
 use super::model::{MarketplaceAgent, NewListing};
 
@@ -118,6 +119,27 @@ impl Marketplace {
             out.push(r?);
         }
         Ok(out)
+    }
+
+    /// Install a listing into the given agent registry, returning the new
+    /// agent record and incrementing the listing's install count.
+    pub fn install(
+        &self,
+        listing_id: &str,
+        registry: &AgentRegistry,
+        name: &str,
+        owner: &str,
+        department: &str,
+    ) -> Result<AgentRecord> {
+        let mut listing = self.get(listing_id)?;
+        let new_agent = listing
+            .template
+            .to_new_agent(name, listing.description.clone(), owner, department);
+        let agent = registry.create(new_agent)?;
+        listing.install_count += 1;
+        self.upsert(&listing)?;
+        cp_info!("marketplace.install", listing_id = %listing_id, agent_id = %agent.id);
+        Ok(agent)
     }
 
     /// Fetch a listing by id.
