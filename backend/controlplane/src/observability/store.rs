@@ -185,6 +185,11 @@ impl ObservabilityStore {
         self.failure_rate(agent, EventKind::ModelCall)
     }
 
+    /// Number of MCP server calls recorded.
+    pub fn mcp_call_count(&self, agent: Option<&str>) -> Result<u64> {
+        self.count_kind(agent, EventKind::McpCall)
+    }
+
     /// Total number of events recorded (optionally scoped to one agent).
     pub fn event_count(&self, agent: Option<&str>) -> Result<u64> {
         let conn = self.conn.lock().expect("observability mutex poisoned");
