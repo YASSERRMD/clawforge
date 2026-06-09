@@ -2,6 +2,7 @@ pub mod openrouter;
 pub mod ollama;
 pub mod mock;
 pub mod openai_compatible;
+pub mod anthropic;
 
 use std::collections::HashMap;
 use std::sync::Arc;
