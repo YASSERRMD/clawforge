@@ -238,4 +238,75 @@ mod tests {
         let reg = McpRegistry::in_memory().unwrap();
         assert!(matches!(reg.get("nope"), Err(ControlPlaneError::NotFound { .. })));
     }
+
+    use crate::constants::RiskLevel;
+    use crate::mcp::model::{HealthStatus, McpTool, NewMcpServer, TransportType};
+
+    fn input() -> NewMcpServer {
+        NewMcpServer {
+            name: "records-mcp".into(),
+            description: "Resident records access".into(),
+            owner: "data-platform".into(),
+            endpoint: "https://mcp.internal/records".into(),
+            transport: TransportType::Http,
+            tools_exposed: vec![
+                McpTool { name: "lookup".into(), description: "read records".into(), permissions: vec!["read".into()] },
+                McpTool { name: "write".into(), description: "update records".into(), permissions: vec!["write".into(), "pii".into()] },
+            ],
+            permissions_required: vec!["read".into(), "write".into()],
+            risk_level: RiskLevel::High,
+        }
+    }
+
+    #[test]
+    fn register_starts_pending_and_unusable() {
+        let reg = McpRegistry::in_memory().unwrap();
+        let s = reg.register(input()).unwrap();
+        assert_eq!(s.status, LifecycleStatus::PendingApproval);
+        assert!(!s.is_usable());
+        assert_eq!(reg.get(&s.id).unwrap().name, "records-mcp");
+        assert_eq!(s.sensitive_tool_count(), 1);
+        assert!(s.requires_governance_review());
+    }
+
+    #[test]
+    fn register_rejects_empty_endpoint() {
+        let reg = McpRegistry::in_memory().unwrap();
+        let mut bad = input();
+        bad.endpoint = "  ".into();
+        assert!(reg.register(bad).is_err());
+    }
+
+    #[test]
+    fn approve_then_block_changes_usability() {
+        let reg = McpRegistry::in_memory().unwrap();
+        let s = reg.register(input()).unwrap();
+        assert!(reg.approve(&s.id).unwrap().is_usable());
+        assert!(!reg.block(&s.id).unwrap().is_usable());
+    }
+
+    #[test]
+    fn list_and_filter_by_status() {
+        let reg = McpRegistry::in_memory().unwrap();
+        let a = reg.register(input()).unwrap();
+        reg.register(input()).unwrap();
+        reg.approve(&a.id).unwrap();
+        assert_eq!(reg.list().unwrap().len(), 2);
+        assert_eq!(reg.list_by_status(LifecycleStatus::Active).unwrap().len(), 1);
+        assert_eq!(reg.list_by_status(LifecycleStatus::PendingApproval).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn usage_and_health_accumulate() {
+        let reg = McpRegistry::in_memory().unwrap();
+        let s = reg.register(input()).unwrap();
+        reg.record_usage(&s.id, 0.05).unwrap();
+        let s = reg.record_usage(&s.id, 0.05).unwrap();
+        assert_eq!(s.usage_count, 2);
+        assert!((s.cost_estimate - 0.10).abs() < 1e-9);
+
+        let s = reg.record_health(&s.id, HealthStatus::Healthy).unwrap();
+        assert_eq!(s.health, HealthStatus::Healthy);
+        assert!(s.last_health_check.is_some());
+    }
 }
