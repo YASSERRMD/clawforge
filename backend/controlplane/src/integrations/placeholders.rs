@@ -63,6 +63,21 @@ pub fn sso(name: &str, owner: &str, department: &str, endpoint: &str, credential
     }
 }
 
+/// Placeholder for an email-sending integration (SMTP / provider API).
+pub fn email(name: &str, owner: &str, department: &str, endpoint: &str, credential: CredentialRef) -> NewIntegration {
+    NewIntegration {
+        name: name.into(),
+        kind: IntegrationKind::Email,
+        description: "Outbound email integration".into(),
+        owner: owner.into(),
+        department: department.into(),
+        endpoint: endpoint.into(),
+        credential,
+        permissions: vec![IntegrationPermission::Connect, IntegrationPermission::Write],
+        risk_level: RiskLevel::Medium,
+    }
+}
+
 /// Placeholder for an outbound webhook integration.
 pub fn webhook(name: &str, owner: &str, department: &str, url: &str) -> NewIntegration {
     NewIntegration {
