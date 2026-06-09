@@ -2,4 +2,4 @@
 
 pub mod model;
 
-pub use model::McpTool;
+pub use model::{HealthStatus, McpServer, McpTool, NewMcpServer, TransportType};
