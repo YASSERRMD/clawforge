@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::error::Result;
 
-use super::event::{ExecutionEvent, NewExecutionEvent};
+use super::event::{EventKind, ExecutionEvent, NewExecutionEvent};
 
 /// Store of execution events; the source for all observability metrics.
 pub struct ObservabilityStore {
@@ -82,6 +82,50 @@ impl ObservabilityStore {
         Ok(event)
     }
 
+    /// Count events of a kind (optionally scoped to one agent).
+    fn count_kind(&self, agent: Option<&str>, kind: EventKind) -> Result<u64> {
+        let k = serde_json::to_string(&kind)?;
+        let conn = self.conn.lock().expect("observability mutex poisoned");
+        let n: i64 = match agent {
+            Some(a) => conn.query_row(
+                "SELECT COUNT(*) FROM execution_events WHERE kind = ?1 AND agent_id = ?2",
+                params![k, a],
+                |r| r.get(0),
+            )?,
+            None => conn.query_row(
+                "SELECT COUNT(*) FROM execution_events WHERE kind = ?1",
+                params![k],
+                |r| r.get(0),
+            )?,
+        };
+        Ok(n as u64)
+    }
+
+    /// Count events of a kind with a given outcome (optionally scoped).
+    fn count_kind_success(&self, agent: Option<&str>, kind: EventKind, success: bool) -> Result<u64> {
+        let k = serde_json::to_string(&kind)?;
+        let s = success as i64;
+        let conn = self.conn.lock().expect("observability mutex poisoned");
+        let n: i64 = match agent {
+            Some(a) => conn.query_row(
+                "SELECT COUNT(*) FROM execution_events WHERE kind = ?1 AND success = ?2 AND agent_id = ?3",
+                params![k, s, a],
+                |r| r.get(0),
+            )?,
+            None => conn.query_row(
+                "SELECT COUNT(*) FROM execution_events WHERE kind = ?1 AND success = ?2",
+                params![k, s],
+                |r| r.get(0),
+            )?,
+        };
+        Ok(n as u64)
+    }
+
+    /// Number of successful task executions.
+    pub fn successful_tasks(&self, agent: Option<&str>) -> Result<u64> {
+        self.count_kind_success(agent, EventKind::Task, true)
+    }
+
     /// Total number of events recorded (optionally scoped to one agent).
     pub fn event_count(&self, agent: Option<&str>) -> Result<u64> {
         let conn = self.conn.lock().expect("observability mutex poisoned");
@@ -100,7 +144,6 @@ impl ObservabilityStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::observability::event::EventKind;
 
     #[test]
     fn log_and_count_events() {
