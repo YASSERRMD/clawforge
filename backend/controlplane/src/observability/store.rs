@@ -155,6 +155,16 @@ impl ObservabilityStore {
         Ok(v)
     }
 
+    /// Mean task cost (0.0 when no tasks).
+    pub fn average_cost(&self, agent: Option<&str>) -> Result<f64> {
+        self.task_aggregate("AVG(cost)", agent)
+    }
+
+    /// Total task cost across all recorded tasks.
+    pub fn total_cost(&self, agent: Option<&str>) -> Result<f64> {
+        self.task_aggregate("SUM(cost)", agent)
+    }
+
     /// Total number of events recorded (optionally scoped to one agent).
     pub fn event_count(&self, agent: Option<&str>) -> Result<u64> {
         let conn = self.conn.lock().expect("observability mutex poisoned");
