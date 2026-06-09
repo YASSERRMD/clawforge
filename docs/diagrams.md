@@ -32,3 +32,25 @@ flowchart TB
     CP -. authorises actions .-> RT[Agent Runtime]
     RT -. execution events .-> OBS
 ```
+
+## Agent lifecycle
+
+The registry state machine. An agent can only become operational by passing
+through approval — a direct `Draft → Active` jump is rejected.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> PendingApproval: submit
+    PendingApproval --> Active: approve
+    PendingApproval --> Draft: reject
+    Active --> Suspended: suspend
+    Suspended --> Active: resume
+    Active --> Blocked: block
+    Blocked --> Active: unblock
+    Draft --> Deactivated: retire
+    Active --> Deactivated: retire
+    Suspended --> Deactivated: retire
+    Blocked --> Deactivated: retire
+    Deactivated --> [*]
+```
