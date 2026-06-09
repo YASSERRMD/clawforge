@@ -1,0 +1,17 @@
+[package]
+name = "clawforge-controlplane"
+version = "0.1.0"
+edition = "2021"
+description = "ClawForge Control Plane — registry, governance, observability, security, MCP governance, marketplace, enterprise integrations, and government compliance for AI agents."
+
+[dependencies]
+clawforge-core = { path = "../core" }
+anyhow.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+tracing.workspace = true
+chrono.workspace = true
+uuid = { workspace = true, features = ["v4", "serde"] }
+thiserror.workspace = true
+once_cell.workspace = true
+rusqlite = { version = "0.32", features = ["bundled"] }

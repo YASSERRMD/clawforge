@@ -8,3 +8,5 @@ Cargo.lock
 clawforge.db
 sleepy_agent.json
 tmp/
+.claude/
+memory/
