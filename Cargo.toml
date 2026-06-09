@@ -22,6 +22,7 @@ members = [
     "backend/commands",
     "backend/daemon",
     "backend/config", "backend/agent", "backend/gateway", "backend/infra", "backend/logging", "backend/markdown", "backend/tui", "backend/browser",
+    "backend/controlplane",
 ]
 resolver = "2"
 
