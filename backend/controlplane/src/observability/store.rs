@@ -126,6 +126,16 @@ impl ObservabilityStore {
         self.count_kind_success(agent, EventKind::Task, true)
     }
 
+    /// Number of failed task executions.
+    pub fn failed_tasks(&self, agent: Option<&str>) -> Result<u64> {
+        self.count_kind_success(agent, EventKind::Task, false)
+    }
+
+    /// Total number of task executions (successful + failed).
+    pub fn task_count(&self, agent: Option<&str>) -> Result<u64> {
+        self.count_kind(agent, EventKind::Task)
+    }
+
     /// Total number of events recorded (optionally scoped to one agent).
     pub fn event_count(&self, agent: Option<&str>) -> Result<u64> {
         let conn = self.conn.lock().expect("observability mutex poisoned");
