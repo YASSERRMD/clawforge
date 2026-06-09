@@ -128,6 +128,11 @@ impl GovernanceEngine {
         self.decide(id, ApprovalStatus::Approved, decided_by, reason)
     }
 
+    /// Reject a pending request, recording who decided and why.
+    pub fn reject(&self, id: &str, decided_by: &str, reason: &str) -> Result<ApprovalRequest> {
+        self.decide(id, ApprovalStatus::Rejected, decided_by, reason)
+    }
+
     /// Apply a terminal decision to a pending request (internal helper).
     fn decide(&self, id: &str, status: ApprovalStatus, decided_by: &str, reason: &str) -> Result<ApprovalRequest> {
         let current = self.get(id)?;
