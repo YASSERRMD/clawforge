@@ -1,5 +1,7 @@
 # Observability
 
+![Observability](assets/observability.png)
+
 The observability layer (`clawforge_controlplane::observability`) is the
 **Splunk** of the control plane. Agents emit append-only `ExecutionEvent`s; the
 dashboard `AgentMetrics` summary is computed on demand from those events, so the

@@ -1,5 +1,7 @@
 # Enterprise Integrations
 
+![Enterprise Integrations](assets/enterprise-integrations.png)
+
 ClawForge governs *connections* to enterprise and government systems. The
 integration registry (`clawforge_controlplane::integrations`) tracks every
 connector, who owns it, what it is allowed to do, where its credentials live,

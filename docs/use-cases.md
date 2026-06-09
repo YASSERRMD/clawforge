@@ -1,5 +1,7 @@
 # Use Cases
 
+![Governed agent lifecycle](assets/use-cases.png)
+
 How the control-plane modules combine into end-to-end workflows.
 
 ## The general flow

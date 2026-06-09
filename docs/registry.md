@@ -1,5 +1,7 @@
 # Agent Registry
 
+![Agent Registry](assets/registry.png)
+
 The Agent Registry (`clawforge_controlplane::registry`) is the single source of
 truth for every agent an organisation runs. Governance, the security gateway,
 and observability all key off the records stored here.

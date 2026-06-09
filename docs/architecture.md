@@ -1,5 +1,7 @@
 # ClawForge Architecture
 
+![ClawForge control-plane architecture](assets/architecture.png)
+
 ClawForge has two layers:
 
 1. **Agent runtime** — the existing Rust workspace that *runs* agents (gateway,

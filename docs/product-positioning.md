@@ -1,5 +1,7 @@
 # ClawForge — Product Positioning
 
+![ClawForge product positioning](assets/positioning.png)
+
 ## One-line
 
 **ClawForge is the enterprise & government control plane for AI agents:

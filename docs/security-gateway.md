@@ -1,5 +1,7 @@
 # Security Gateway
 
+![Security Gateway](assets/security-gateway.png)
+
 The Security Gateway (`clawforge_controlplane::gateway`) is the enforcement
 point: **every agent action is checked before execution**. It is deny-by-reason
 — an action is allowed only if no check objects.

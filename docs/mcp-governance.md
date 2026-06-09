@@ -1,5 +1,7 @@
 # MCP Governance
 
+![MCP Governance](assets/mcp-governance.png)
+
 The MCP registry (`clawforge_controlplane::mcp`) governs the Model Context
 Protocol servers an organisation exposes to its agents — the same discipline the
 agent registry applies to agents. The Security Gateway consults agent
