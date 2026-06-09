@@ -9,7 +9,7 @@ use rusqlite::{params, Connection};
 
 use crate::error::{ControlPlaneError, Result};
 
-use super::model::McpServer;
+use super::model::{McpServer, NewMcpServer};
 
 /// Persistent registry of MCP servers.
 pub struct McpRegistry {
@@ -82,6 +82,20 @@ impl McpRegistry {
         let conn = Connection::open_in_memory()?;
         conn.execute_batch(SCHEMA)?;
         Ok(Self { conn: Mutex::new(conn) })
+    }
+
+    /// Register a new MCP server; it starts in `PendingApproval`.
+    pub fn register(&self, input: NewMcpServer) -> Result<McpServer> {
+        if input.name.trim().is_empty() {
+            return Err(ControlPlaneError::validation("MCP server name must not be empty"));
+        }
+        if input.endpoint.trim().is_empty() {
+            return Err(ControlPlaneError::validation("MCP server endpoint must not be empty"));
+        }
+        let server = McpServer::from_new(input);
+        self.upsert(&server)?;
+        cp_info!("mcp.register", server_id = %server.id, name = %server.name);
+        Ok(server)
     }
 
     /// Fetch a server by id, or [`ControlPlaneError::NotFound`].
