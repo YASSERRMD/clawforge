@@ -10,6 +10,7 @@ use std::sync::Mutex;
 use chrono::Utc;
 use rusqlite::{params, Connection};
 
+use crate::constants::LifecycleStatus;
 use crate::error::{ControlPlaneError, Result};
 
 use super::model::{AgentRecord, AgentUpdate, NewAgent};
@@ -184,6 +185,26 @@ impl AgentRegistry {
             rusqlite::Error::QueryReturnedNoRows => ControlPlaneError::not_found("agent", id),
             other => other.into(),
         })
+    }
+
+    /// Permanently deactivate an agent. Returns the updated record.
+    pub fn deactivate(&self, id: &str) -> Result<AgentRecord> {
+        self.write_status(id, LifecycleStatus::Deactivated)
+    }
+
+    /// Persist a new lifecycle status for an agent (internal helper).
+    pub(crate) fn write_status(&self, id: &str, status: LifecycleStatus) -> Result<AgentRecord> {
+        // Ensure the agent exists (and produce a NotFound otherwise).
+        let _ = self.get(id)?;
+        let now = Utc::now().timestamp();
+        let conn = self.conn.lock().expect("registry mutex poisoned");
+        conn.execute(
+            "UPDATE agents SET status = ?2, updated_at = ?3 WHERE id = ?1",
+            params![id, serde_json::to_string(&status)?, now],
+        )?;
+        drop(conn);
+        cp_info!("registry.agent.status", agent_id = %id, status = ?status);
+        self.get(id)
     }
 
     /// Total number of registered agents.
