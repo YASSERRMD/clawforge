@@ -235,10 +235,97 @@ impl AgentRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::{DataAccessLevel, RiskLevel};
+
+    fn input() -> NewAgent {
+        NewAgent {
+            name: "Permit Bot".into(),
+            description: "desc".into(),
+            owner: "team".into(),
+            department: "Licensing".into(),
+            framework: "openclaw".into(),
+            model_provider: "anthropic".into(),
+            model_name: "claude-opus-4-8".into(),
+            tools_allowed: vec!["search".into()],
+            mcp_servers_allowed: vec!["records-mcp".into()],
+            data_access_level: DataAccessLevel::Internal,
+            risk_level: RiskLevel::Medium,
+        }
+    }
 
     #[test]
     fn fresh_registry_is_empty() {
         let reg = AgentRegistry::in_memory().unwrap();
         assert_eq!(reg.count().unwrap(), 0);
+    }
+
+    #[test]
+    fn create_then_get_roundtrips() {
+        let reg = AgentRegistry::in_memory().unwrap();
+        let created = reg.create(input()).unwrap();
+        let fetched = reg.get(&created.id).unwrap();
+        assert_eq!(fetched.name, "Permit Bot");
+        assert_eq!(fetched.tools_allowed, vec!["search".to_string()]);
+        assert_eq!(fetched.status, LifecycleStatus::Draft);
+        assert_eq!(reg.count().unwrap(), 1);
+    }
+
+    #[test]
+    fn create_rejects_invalid_input() {
+        let reg = AgentRegistry::in_memory().unwrap();
+        let mut bad = input();
+        bad.name = String::new();
+        assert!(reg.create(bad).is_err());
+    }
+
+    #[test]
+    fn get_missing_is_not_found() {
+        let reg = AgentRegistry::in_memory().unwrap();
+        let err = reg.get("nope").unwrap_err();
+        assert!(matches!(err, ControlPlaneError::NotFound { .. }));
+    }
+
+    #[test]
+    fn list_returns_all() {
+        let reg = AgentRegistry::in_memory().unwrap();
+        reg.create(input()).unwrap();
+        reg.create(input()).unwrap();
+        assert_eq!(reg.list().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn update_bumps_version_and_changes_fields() {
+        let reg = AgentRegistry::in_memory().unwrap();
+        let created = reg.create(input()).unwrap();
+        let patch = AgentUpdate {
+            description: Some("updated".into()),
+            risk_level: Some(RiskLevel::High),
+            ..Default::default()
+        };
+        let updated = reg.update(&created.id, patch).unwrap();
+        assert_eq!(updated.version, 2);
+        assert_eq!(updated.description, "updated");
+        assert_eq!(updated.risk_level, RiskLevel::High);
+        assert!(updated.updated_at >= created.updated_at);
+    }
+
+    #[test]
+    fn deactivate_sets_terminal_status() {
+        let reg = AgentRegistry::in_memory().unwrap();
+        let created = reg.create(input()).unwrap();
+        let deact = reg.deactivate(&created.id).unwrap();
+        assert_eq!(deact.status, LifecycleStatus::Deactivated);
+    }
+
+    #[test]
+    fn set_status_enforces_transitions() {
+        let reg = AgentRegistry::in_memory().unwrap();
+        let created = reg.create(input()).unwrap();
+        // Draft -> Active is not allowed (must pass approval).
+        assert!(reg.set_status(&created.id, LifecycleStatus::Active).is_err());
+        // Draft -> PendingApproval -> Active is allowed.
+        reg.set_status(&created.id, LifecycleStatus::PendingApproval).unwrap();
+        let active = reg.set_status(&created.id, LifecycleStatus::Active).unwrap();
+        assert!(active.is_operational());
     }
 }
