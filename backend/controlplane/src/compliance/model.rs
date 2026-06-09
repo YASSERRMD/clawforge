@@ -8,6 +8,25 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Export-control posture: may the subject's data leave the environment?
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExportControl {
+    /// No export restrictions.
+    Unrestricted,
+    /// Export allowed only with explicit approval.
+    Restricted,
+    /// Export is forbidden (data must not leave the boundary).
+    Prohibited,
+}
+
+impl ExportControl {
+    /// Whether an unconditional export is permitted.
+    pub fn allows_export(&self) -> bool {
+        matches!(self, ExportControl::Unrestricted)
+    }
+}
+
 /// PII handling classification for a subject's data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -132,6 +151,13 @@ pub struct CompliancePolicy {
     /// (no deletion) and all activity must be captured as audit evidence.
     #[serde(default)]
     pub investigation_mode: bool,
+    /// Export-control posture for the subject's data.
+    #[serde(default = "default_export")]
+    pub export_control: ExportControl,
+}
+
+fn default_export() -> ExportControl {
+    ExportControl::Restricted
 }
 
 fn default_pii() -> PiiClassification {
@@ -147,6 +173,7 @@ impl CompliancePolicy {
             pii_classification: PiiClassification::NonPii,
             data_retention_days: 0,
             investigation_mode: false,
+            export_control: ExportControl::Restricted,
         }
     }
 
