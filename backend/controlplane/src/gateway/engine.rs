@@ -244,4 +244,76 @@ mod tests {
         let decision = gw.evaluate(&ActionRequest::for_agent(agent(LifecycleStatus::Active)));
         assert!(decision.allowed);
     }
+
+    #[test]
+    fn disallowed_tool_is_blocked() {
+        let gw = SecurityGateway::new(SecurityPolicy::permissive());
+        let mut req = valid_request();
+        req.tool = Some("shell".into()); // not in allow-list
+        let d = gw.evaluate(&req);
+        assert!(!d.allowed);
+        assert!(d.denials.iter().any(|r| r.contains("tool 'shell'")));
+    }
+
+    #[test]
+    fn disallowed_mcp_and_model_are_blocked() {
+        let gw = SecurityGateway::new(SecurityPolicy::permissive());
+        let mut req = valid_request();
+        req.mcp_server = Some("rogue-mcp".into());
+        req.model = Some("gpt-4".into());
+        let d = gw.evaluate(&req);
+        assert!(!d.allowed);
+        assert!(d.denials.iter().any(|r| r.contains("MCP server 'rogue-mcp'")));
+        assert!(d.denials.iter().any(|r| r.contains("model 'gpt-4'")));
+    }
+
+    #[test]
+    fn data_access_above_clearance_is_blocked() {
+        let gw = SecurityGateway::new(SecurityPolicy::permissive());
+        let mut req = valid_request();
+        req.data_access_level = DataAccessLevel::Restricted; // agent clearance is Internal
+        let d = gw.evaluate(&req);
+        assert!(!d.allowed);
+        assert!(d.denials.iter().any(|r| r.contains("exceeds agent clearance")));
+    }
+
+    #[test]
+    fn over_budget_is_blocked() {
+        let gw = SecurityGateway::new(SecurityPolicy::default()); // limit 100
+        let mut req = valid_request();
+        req.spent_so_far = 99.0;
+        req.estimated_cost = 50.0;
+        let d = gw.evaluate(&req);
+        assert!(d.denials.iter().any(|r| r.contains("budget exceeded")));
+    }
+
+    #[test]
+    fn sensitive_capabilities_blocked_by_default_policy() {
+        let gw = SecurityGateway::new(SecurityPolicy::default());
+        let mut req = valid_request();
+        req.touches_pii = true;
+        req.is_database_write = true;
+        let d = gw.evaluate(&req);
+        assert!(d.denials.iter().any(|r| r.contains("PII access")));
+        assert!(d.denials.iter().any(|r| r.contains("database writes")));
+    }
+
+    #[test]
+    fn high_risk_requires_human_approval() {
+        let gw = SecurityGateway::new(SecurityPolicy::default());
+        let mut a = agent(LifecycleStatus::Active);
+        a.risk_level = RiskLevel::Critical;
+        let mut req = ActionRequest::for_agent(a);
+        req.tool = Some("search".into());
+        let d = gw.evaluate(&req);
+        assert!(d.denials.iter().any(|r| r.contains("human approval required")));
+    }
+
+    #[test]
+    fn blocked_agent_is_denied_with_high_risk_band() {
+        let gw = SecurityGateway::new(SecurityPolicy::default());
+        let d = gw.evaluate(&ActionRequest::for_agent(agent(LifecycleStatus::Blocked)));
+        assert!(!d.allowed);
+        assert!(d.denials.iter().any(|r| r.contains("blocked")));
+    }
 }
