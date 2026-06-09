@@ -32,6 +32,21 @@ pub fn database(
     }
 }
 
+/// Placeholder for a GIS integration (ArcGIS and similar spatial services).
+pub fn gis(name: &str, owner: &str, department: &str, endpoint: &str, credential: CredentialRef) -> NewIntegration {
+    NewIntegration {
+        name: name.into(),
+        kind: IntegrationKind::ArcGis,
+        description: "GIS / spatial data integration".into(),
+        owner: owner.into(),
+        department: department.into(),
+        endpoint: endpoint.into(),
+        credential,
+        permissions: vec![IntegrationPermission::Connect, IntegrationPermission::Read],
+        risk_level: RiskLevel::Medium,
+    }
+}
+
 /// Placeholder for an outbound webhook integration.
 pub fn webhook(name: &str, owner: &str, department: &str, url: &str) -> NewIntegration {
     NewIntegration {
