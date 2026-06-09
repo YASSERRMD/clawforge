@@ -28,4 +28,33 @@ impl SecurityDecision {
             evaluated_at,
         }
     }
+
+    /// The first denial reason, if any (useful for terse responses).
+    pub fn primary_reason(&self) -> Option<&str> {
+        self.denials.first().map(|s| s.as_str())
+    }
+
+    /// Coarse risk band derived from the score: `low` / `medium` / `high` / `critical`.
+    pub fn risk_band(&self) -> &'static str {
+        match self.risk_score {
+            0..=24 => "low",
+            25..=49 => "medium",
+            50..=74 => "high",
+            _ => "critical",
+        }
+    }
+
+    /// One-line, human-readable verdict suitable for logs and API responses.
+    pub fn summary(&self) -> String {
+        if self.allowed {
+            format!("ALLOW (risk: {}, score: {})", self.risk_band(), self.risk_score)
+        } else {
+            format!(
+                "DENY (risk: {}, score: {}) — {}",
+                self.risk_band(),
+                self.risk_score,
+                self.denials.join("; ")
+            )
+        }
+    }
 }
