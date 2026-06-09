@@ -9,7 +9,7 @@ use std::sync::Mutex;
 
 use rusqlite::{params, Connection};
 
-use crate::error::Result;
+use crate::error::{ControlPlaneError, Result};
 
 use super::model::{AgentRecord, NewAgent};
 use super::validation::validate_new_agent;
@@ -135,6 +135,20 @@ impl AgentRegistry {
             out.push(row?);
         }
         Ok(out)
+    }
+
+    /// Fetch a single agent by id, or [`ControlPlaneError::NotFound`].
+    pub fn get(&self, id: &str) -> Result<AgentRecord> {
+        let conn = self.conn.lock().expect("registry mutex poisoned");
+        conn.query_row(
+            &format!("SELECT {COLUMNS} FROM agents WHERE id = ?1"),
+            params![id],
+            row_to_record,
+        )
+        .map_err(|e| match e {
+            rusqlite::Error::QueryReturnedNoRows => ControlPlaneError::not_found("agent", id),
+            other => other.into(),
+        })
     }
 
     /// Total number of registered agents.
