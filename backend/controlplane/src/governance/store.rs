@@ -210,6 +210,23 @@ impl GovernanceEngine {
         self.get(id)
     }
 
+    /// List all approval requests, newest first.
+    pub fn list(&self) -> Result<Vec<ApprovalRequest>> {
+        self.query_requests(&format!("SELECT {COLUMNS} FROM approval_requests ORDER BY created_at DESC"), [])
+    }
+
+    /// Run a SELECT returning approval requests (internal helper).
+    fn query_requests<P: rusqlite::Params>(&self, sql: &str, params: P) -> Result<Vec<ApprovalRequest>> {
+        let conn = self.conn.lock().expect("governance mutex poisoned");
+        let mut stmt = conn.prepare(sql)?;
+        let rows = stmt.query_map(params, row_to_request)?;
+        let mut out = Vec::new();
+        for r in rows {
+            out.push(r?);
+        }
+        Ok(out)
+    }
+
     /// Fetch a single request by id.
     pub fn get(&self, id: &str) -> Result<ApprovalRequest> {
         let conn = self.conn.lock().expect("governance mutex poisoned");
