@@ -8,6 +8,25 @@
 
 use serde::{Deserialize, Serialize};
 
+/// PII handling classification for a subject's data.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PiiClassification {
+    /// No personal data handled.
+    NonPii,
+    /// Ordinary personal data.
+    Pii,
+    /// Special-category / sensitive personal data (health, biometric, etc.).
+    SensitivePii,
+}
+
+impl PiiClassification {
+    /// Whether this classification triggers heightened PDPL controls.
+    pub fn is_regulated(&self) -> bool {
+        !matches!(self, PiiClassification::NonPii)
+    }
+}
+
 /// A compliance policy applied to a subject (agent id or department name).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompliancePolicy {
@@ -15,6 +34,13 @@ pub struct CompliancePolicy {
     pub subject_id: String,
     /// Regulatory framework reference (e.g. `UAE-PDPL`).
     pub framework: String,
+    /// PII handling classification.
+    #[serde(default = "default_pii")]
+    pub pii_classification: PiiClassification,
+}
+
+fn default_pii() -> PiiClassification {
+    PiiClassification::NonPii
 }
 
 impl CompliancePolicy {
@@ -23,6 +49,7 @@ impl CompliancePolicy {
         CompliancePolicy {
             subject_id: subject_id.into(),
             framework: framework.into(),
+            pii_classification: PiiClassification::NonPii,
         }
     }
 
