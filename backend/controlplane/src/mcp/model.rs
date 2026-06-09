@@ -130,4 +130,14 @@ impl McpServer {
     pub fn is_usable(&self) -> bool {
         self.status.is_operational()
     }
+
+    /// Number of exposed tools that request a sensitive permission scope.
+    pub fn sensitive_tool_count(&self) -> usize {
+        self.tools_exposed.iter().filter(|t| t.is_sensitive()).count()
+    }
+
+    /// Names of all exposed tools.
+    pub fn tool_names(&self) -> Vec<&str> {
+        self.tools_exposed.iter().map(|t| t.name.as_str()).collect()
+    }
 }
