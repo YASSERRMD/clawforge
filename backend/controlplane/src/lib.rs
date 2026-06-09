@@ -19,6 +19,7 @@ pub mod constants;
 pub mod error;
 pub mod gateway;
 pub mod governance;
+pub mod integrations;
 pub mod marketplace;
 pub mod mcp;
 pub mod observability;
