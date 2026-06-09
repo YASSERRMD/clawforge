@@ -206,4 +206,42 @@ mod tests {
         let decision = gw.evaluate(&ActionRequest::for_agent(agent(LifecycleStatus::Active)));
         assert!(decision.allowed);
     }
+
+    /// A fully valid request under a permissive policy.
+    fn valid_request() -> ActionRequest {
+        let mut req = ActionRequest::for_agent(agent(LifecycleStatus::Active));
+        req.tool = Some("search".into());
+        req.mcp_server = Some("records-mcp".into());
+        req.model = Some("claude-opus-4-8".into());
+        req.data_access_level = DataAccessLevel::Internal;
+        req.estimated_cost = 1.0;
+        req.spent_so_far = 2.0;
+        req
+    }
+
+    #[test]
+    fn fully_valid_action_is_allowed() {
+        let gw = SecurityGateway::new(SecurityPolicy::permissive());
+        let decision = gw.evaluate(&valid_request());
+        assert!(decision.allowed, "denials: {:?}", decision.denials);
+        assert!(decision.denials.is_empty());
+        assert!(decision.primary_reason().is_none());
+    }
+
+    #[test]
+    fn allowed_action_carries_a_risk_score() {
+        let gw = SecurityGateway::new(SecurityPolicy::permissive());
+        let decision = gw.evaluate(&valid_request());
+        // Medium agent (20) + internal data (6) = 26 => "medium" band.
+        assert!(decision.risk_score > 0);
+        assert_eq!(decision.risk_band(), "medium");
+    }
+
+    #[test]
+    fn unspecified_optional_action_is_allowed() {
+        // No tool/mcp/model and no sensitive capabilities under permissive policy.
+        let gw = SecurityGateway::new(SecurityPolicy::permissive());
+        let decision = gw.evaluate(&ActionRequest::for_agent(agent(LifecycleStatus::Active)));
+        assert!(decision.allowed);
+    }
 }
