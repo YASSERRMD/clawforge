@@ -136,6 +136,25 @@ impl ObservabilityStore {
         self.count_kind(agent, EventKind::Task)
     }
 
+    /// Mean task latency in milliseconds (0.0 when no timed tasks).
+    pub fn average_latency_ms(&self, agent: Option<&str>) -> Result<f64> {
+        self.task_aggregate("AVG(latency_ms)", agent)
+    }
+
+    /// Run a scalar aggregate (`AVG`/`SUM`) over task events (internal helper).
+    fn task_aggregate(&self, expr: &str, agent: Option<&str>) -> Result<f64> {
+        let kind = serde_json::to_string(&EventKind::Task)?;
+        let conn = self.conn.lock().expect("observability mutex poisoned");
+        let sql_all = format!("SELECT COALESCE({expr}, 0.0) FROM execution_events WHERE kind = ?1");
+        let sql_agent =
+            format!("SELECT COALESCE({expr}, 0.0) FROM execution_events WHERE kind = ?1 AND agent_id = ?2");
+        let v: f64 = match agent {
+            Some(a) => conn.query_row(&sql_agent, params![kind, a], |r| r.get(0))?,
+            None => conn.query_row(&sql_all, params![kind], |r| r.get(0))?,
+        };
+        Ok(v)
+    }
+
     /// Total number of events recorded (optionally scoped to one agent).
     pub fn event_count(&self, agent: Option<&str>) -> Result<u64> {
         let conn = self.conn.lock().expect("observability mutex poisoned");
