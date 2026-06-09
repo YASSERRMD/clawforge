@@ -8,6 +8,7 @@ use std::sync::Mutex;
 
 use rusqlite::{params, Connection};
 
+use crate::constants::RiskLevel;
 use crate::error::{ControlPlaneError, Result};
 
 use super::model::{MarketplaceAgent, NewListing};
@@ -99,6 +100,14 @@ impl Marketplace {
         )
     }
 
+    /// List listings at a given risk level.
+    pub fn list_by_risk(&self, risk: RiskLevel) -> Result<Vec<MarketplaceAgent>> {
+        self.query(
+            &format!("SELECT {COLUMNS} FROM marketplace_listings WHERE risk_level = ?1 ORDER BY install_count DESC"),
+            params![serde_json::to_string(&risk)?],
+        )
+    }
+
     /// Run a SELECT returning listings (internal helper).
     fn query<P: rusqlite::Params>(&self, sql: &str, params: P) -> Result<Vec<MarketplaceAgent>> {
         let conn = self.conn.lock().expect("marketplace mutex poisoned");
@@ -155,7 +164,7 @@ impl Marketplace {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::{DataAccessLevel, RiskLevel};
+    use crate::constants::DataAccessLevel;
     use crate::marketplace::model::AgentTemplate;
 
     pub(super) fn listing() -> NewListing {
