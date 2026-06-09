@@ -128,6 +128,10 @@ pub struct CompliancePolicy {
     /// Data retention period in days; `0` means "retain indefinitely".
     #[serde(default)]
     pub data_retention_days: u32,
+    /// When enabled, the subject is under investigation: retention holds apply
+    /// (no deletion) and all activity must be captured as audit evidence.
+    #[serde(default)]
+    pub investigation_mode: bool,
 }
 
 fn default_pii() -> PiiClassification {
@@ -142,13 +146,15 @@ impl CompliancePolicy {
             framework: framework.into(),
             pii_classification: PiiClassification::NonPii,
             data_retention_days: 0,
+            investigation_mode: false,
         }
     }
 
     /// Whether a record `age_days` old is past this policy's retention window.
-    /// Indefinite retention (`0`) is never past due.
+    /// Indefinite retention (`0`) and active investigation holds are never past
+    /// due (a legal hold overrides routine deletion).
     pub fn is_past_retention(&self, age_days: u32) -> bool {
-        self.data_retention_days != 0 && age_days > self.data_retention_days
+        !self.investigation_mode && self.data_retention_days != 0 && age_days > self.data_retention_days
     }
 
     /// A baseline UAE PDPL policy for a subject.
