@@ -223,6 +223,14 @@ impl GovernanceEngine {
         )
     }
 
+    /// List approval requests submitted by a given owner/requester.
+    pub fn list_by_owner(&self, requested_by: &str) -> Result<Vec<ApprovalRequest>> {
+        self.query_requests(
+            &format!("SELECT {COLUMNS} FROM approval_requests WHERE requested_by = ?1 ORDER BY created_at DESC"),
+            params![requested_by],
+        )
+    }
+
     /// Run a SELECT returning approval requests (internal helper).
     fn query_requests<P: rusqlite::Params>(&self, sql: &str, params: P) -> Result<Vec<ApprovalRequest>> {
         let conn = self.conn.lock().expect("governance mutex poisoned");
