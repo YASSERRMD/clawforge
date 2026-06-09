@@ -213,6 +213,7 @@ mod tests {
             memory_config: None,
             workflow: vec![],
             allowed_tools: vec![],
+            allowed_skills: vec![],
         }
     }
 
