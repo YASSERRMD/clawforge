@@ -11,7 +11,7 @@ use rusqlite::{params, Connection};
 use crate::constants::LifecycleStatus;
 use crate::error::{ControlPlaneError, Result};
 
-use super::model::{IntegrationProvider, NewIntegration};
+use super::model::{classify_risk, IntegrationProvider, NewIntegration};
 
 /// Persistent registry of enterprise integrations.
 pub struct IntegrationRegistry {
@@ -84,7 +84,13 @@ impl IntegrationRegistry {
         if input.name.trim().is_empty() {
             return Err(ControlPlaneError::validation("integration name must not be empty"));
         }
-        let integration = IntegrationProvider::from_new(input);
+        let mut integration = IntegrationProvider::from_new(input);
+        // Escalate risk to at least the classified baseline for the kind and
+        // its granted permissions; never silently downgrade an explicit level.
+        let classified = classify_risk(integration.kind, &integration.permissions);
+        if classified.weight() > integration.risk_level.weight() {
+            integration.risk_level = classified;
+        }
         self.upsert(&integration)?;
         cp_info!("integration.register", id = %integration.id, name = %integration.name);
         Ok(integration)

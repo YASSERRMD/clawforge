@@ -28,6 +28,32 @@ pub enum IntegrationKind {
     Webhook,
 }
 
+impl IntegrationKind {
+    /// Baseline risk for this category before considering granted permissions.
+    /// Identity stores and primary databases of record are the most sensitive.
+    pub fn default_risk(&self) -> RiskLevel {
+        use IntegrationKind::*;
+        match self {
+            ActiveDirectory | Sso => RiskLevel::Critical,
+            Oracle | SqlServer | Postgres | MongoDb => RiskLevel::High,
+            ServiceNow | SharePoint | ApiGateway => RiskLevel::Medium,
+            ArcGis | Email | Webhook => RiskLevel::Medium,
+        }
+    }
+}
+
+/// Classify an integration's effective risk: the higher of the category
+/// baseline and a floor implied by any elevated (write/delete/admin) permission.
+pub fn classify_risk(kind: IntegrationKind, permissions: &[IntegrationPermission]) -> RiskLevel {
+    let base = kind.default_risk();
+    let has_elevated = permissions.iter().any(|p| p.is_elevated());
+    if has_elevated && base.weight() < RiskLevel::High.weight() {
+        RiskLevel::High
+    } else {
+        base
+    }
+}
+
 /// Where an integration's credentials are kept. This is a *reference*, never
 /// the secret material itself.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
