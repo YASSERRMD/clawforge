@@ -2,4 +2,4 @@
 
 pub mod model;
 
-pub use model::CredentialRef;
+pub use model::{CredentialRef, IntegrationPermission};

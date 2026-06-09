@@ -40,3 +40,30 @@ impl CredentialRef {
         self.store != "none" && !self.key.is_empty()
     }
 }
+
+/// An operation an integration is permitted to perform. Granting `Write`,
+/// `Delete`, or `Admin` is what elevates an integration's risk.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum IntegrationPermission {
+    /// Establish a connection / authenticate.
+    Connect,
+    /// Read data.
+    Read,
+    /// Write or update data.
+    Write,
+    /// Delete data.
+    Delete,
+    /// Administrative / privileged operations.
+    Admin,
+}
+
+impl IntegrationPermission {
+    /// Whether this permission grants mutating or privileged access.
+    pub fn is_elevated(&self) -> bool {
+        matches!(
+            self,
+            IntegrationPermission::Write | IntegrationPermission::Delete | IntegrationPermission::Admin
+        )
+    }
+}
